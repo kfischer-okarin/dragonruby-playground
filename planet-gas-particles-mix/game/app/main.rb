@@ -4,89 +4,141 @@ require 'lib/sprite_resources.rb'
 
 require 'app/resources.rb'
 
-class SphericalCoordinatesSprite < Resources::Sprite
-  DEG_360 = 2 * Math::PI
-
-  attr_reader :radius, :polar, :azimuth, :base_w, :base_h, :center_x, :center_y
-
-  def initialize(resource, values = nil)
-    super
-    @dirty = true
-    @base_w ||= w
-    @base_h ||= h
-    @center_x ||= 0
-    @center_y ||= 0
+class Array
+  def z
+    value(2)
   end
 
-  def x
-    @x + @center_x
-  end
-
-  def y
-    @y + @center_y
-  end
-
-  %i[radius base_w base_h].each do |attribute|
-    define_method :"#{attribute}=" do |value|
-      @dirty = true
-      instance_variable_set(:"@#{attribute}", value)
-    end
-  end
-
-  %i[polar azimuth].each do |attribute|
-    define_method :"#{attribute}=" do |value|
-      @dirty = true
-      instance_variable_set(:"@#{attribute}", value % DEG_360)
-    end
-  end
-
-  def tick
-    return unless @dirty
-
-    z = @radius * Math.cos(@polar)
-    z_factor = 0.5 + (@radius - z) / (2 * @radius)
-    @w = @base_w * z_factor
-    @h = @base_h * z_factor
-
-    sin_polar = Math.sin(@polar)
-    @x = @radius * sin_polar * Math.cos(@azimuth) - @w.half
-    @y = @radius * sin_polar * Math.sin(@azimuth) - @h.half
-
-    @dirty = false
+  def z=(value)
+    self[2] = value
   end
 end
 
-class ConstantSpeedMovement
-  attr_accessor :v_polar, :v_azimuth
+Quaternion = Struct.new(:a, :b, :c, :d) do
+  def self.from_angle_and_axis(angle, x, y, z) # rubocop:disable Metrics/AbcSize, Naming/MethodParameterName
+    length = Math.sqrt(x**2 + y**2 + z**2)
+    sinus = Math.sin(angle / 2)
+
+    new(
+      Math.cos(angle / 2),
+      x * sinus / length,
+      y * sinus / length,
+      z * sinus / length
+    )
+  end
+
+  def apply_to(vector)
+    vector_quaternion = Quaternion.new(0, vector.x, vector.y, vector.z)
+    result = self * vector_quaternion * inverse
+    vector.x = result.b
+    vector.y = result.c
+    vector.z = result.d
+  end
+
+  def square_norm
+    a**2 + b**2 + c**2 + d**2
+  end
+
+  def *(other) # rubocop:disable Metrics/AbcSize
+    Quaternion.new(
+      a * other.a - b * other.b - c * other.c - d * other.d,
+      a * other.b + b * other.a + c * other.d - d * other.c,
+      a * other.c - b * other.d + c * other.a + d * other.b,
+      a * other.d + b * other.c - c * other.b + d * other.a
+    )
+  end
+
+  def inverse
+    factor = 1 / square_norm
+    Quaternion.new(a * factor, -b * factor, -c * factor, -d * factor)
+  end
+
+  def to_s
+    "Quaternion(#{a}, #{b}, #{c}, #{d})"
+  end
+end
+
+class Sprite3D < Resources::Sprite
+  attr_reader :z
+
+  def z=(value)
+    camera_distance = 400
+    distance = camera_distance - value
+    @z_factor = distance / camera_distance
+    @z = value
+  end
+
+  def w
+    @w * @z_factor
+  end
+
+  def h
+    @h * @z_factor
+  end
+end
+
+class Particle < Sprite3D
+  def draw_override(ffi_draw)
+    actual_w = w
+    actual_h = h
+    # x, y, w, h, path
+    ffi_draw.draw_sprite_3 @x + 640 - actual_w.half, @y + 360 - actual_h.half, actual_w, actual_h, path,
+                           # angle, alpha, red_saturation, green_saturation, blue_saturation
+                           nil, a, r, g, b,
+                           # tile_x, tile_y, tile_w, tile_h
+                           nil, nil, nil, nil,
+                           # flip_horizontally, flip_vertically,
+                           nil, nil,
+                           # angle_anchor_x, angle_anchor_y,
+                           nil, nil,
+                           # source_x, source_y, source_w, source_h
+                           nil, nil, nil, nil
+  end
+
+  def a
+    255 * (@z_factor - 0.4)
+  end
+end
+
+def randomly_positioned_on_sphere(particle, radius)
+  polar = rand * Math::PI
+  azimuth = rand * 2 * Math::PI
+
+  sin_polar = Math.sin(polar)
+
+  particle.with(
+    x: radius * sin_polar * Math.cos(azimuth),
+    y: radius * sin_polar * Math.sin(azimuth),
+    z: radius * Math.cos(polar),
+    r: rand * 255,
+    g: rand * 255,
+    b: rand * 255
+  )
+end
+
+class ConstantRotation
+  attr_accessor :v_angle, :axis
 
   def initialize(particle, values)
     @particle = particle
-    @v_polar = values[:v_polar] || 0
-    @v_azimuth = values[:v_azimuth] || 0
+    @v_angle = values[:v_angle] || 0
+    @axis = values[:axis] || [1, 0, 0]
+    @quaternion = Quaternion.from_angle_and_axis(@v_angle, @axis.x, @axis.y, @axis.z)
   end
 
   def tick
-    @particle.polar += @v_polar unless @v_polar.zero?
-    @particle.azimuth += @v_azimuth unless @v_azimuth.zero?
-    @particle.tick
+    @quaternion.apply_to(@particle) unless @v_angle.zero?
   end
 end
 
-def random_particle(args)
-  args.state.base_particle.with(polar: rand * Math::PI, azimuth: rand * 2 * Math::PI)
-end
-
 def random_direction(particle)
-  direction = rand * 2 * Math::PI
-  # ConstantSpeedMovement.new(particle, v_polar: Math.sin(direction) * 0.1, v_azimuth: Math.cos(direction) * 0.1)
-  ConstantSpeedMovement.new(particle, v_polar: 0.1, v_azimuth: 0.1)
+  random_axis = [rand - 0.5, rand - 0.5, rand - 0.5]
+  ConstantRotation.new(particle, v_angle: 0.01, axis: random_axis)
 end
 
 def setup(args)
-  args.state.base_particle ||= SphericalCoordinatesSprite.new(
-    Resources.sprites.particle, center_x: 640, center_y: 360, base_w: 64, base_h: 64, radius: 200
-  )
-  args.state.particles = 1.times.map { random_particle(args) }
+  args.state.base_particle ||= Particle.new(Resources.sprites.particle, w: 64, h: 64)
+  args.state.particles = 100.times.map { randomly_positioned_on_sphere(args.state.base_particle, 200) }
   args.state.movements = args.state.particles.map { |particle| random_direction(particle) }
 end
 
