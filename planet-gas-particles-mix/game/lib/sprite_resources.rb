@@ -5,7 +5,7 @@ module Resources
 
     def initialize(resource, values = nil)
       @resource = resource
-      instance_variables_set_from_hash(values) if values
+      attributes_from_hash(values) if values
     end
 
     def w
@@ -18,7 +18,7 @@ module Resources
 
     def with(values)
       dup.tap { |copy|
-        copy.instance_variables_set_from_hash(values)
+        copy.attributes_from_hash(values)
       }
     end
 
@@ -26,9 +26,9 @@ module Resources
       @resource.path
     end
 
-    def instance_variables_set_from_hash(hash)
+    def attributes_from_hash(hash)
       hash.each do |attribute, value|
-        instance_variable_set(:"@#{attribute}", value)
+        send(:"#{attribute}=", value)
       end
     end
   end
