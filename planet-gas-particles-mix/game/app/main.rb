@@ -78,6 +78,10 @@ class Sprite3D < Resources::Sprite
 end
 
 class Particle < Sprite3D
+  def distance_from_center
+    Math.sqrt(@x**2 + @y**2 + @z**2)
+  end
+
   def draw_override(ffi_draw)
     actual_w = w
     actual_h = h
@@ -116,24 +120,56 @@ def randomly_positioned_on_sphere(particle, radius)
   )
 end
 
-class ConstantRotation
-  attr_accessor :v_angle, :axis
+class Rotation
+  attr_reader :v_angle, :axis
 
   def initialize(particle, values)
     @particle = particle
     @v_angle = values[:v_angle] || 0
     @axis = values[:axis] || [1, 0, 0]
-    @quaternion = Quaternion.from_angle_and_axis(@v_angle, @axis.x, @axis.y, @axis.z)
+  end
+
+  def v_angle=(value)
+    @quaternion = nil
+    @v_angle = value
+  end
+
+  def axis=(value)
+    @quaternion = nil
+    @axis = value
+  end
+
+  def quaternion
+    @quaternion ||= Quaternion.from_angle_and_axis(@v_angle, @axis.x, @axis.y, @axis.z)
   end
 
   def tick
-    @quaternion.apply_to(@particle) unless @v_angle.zero?
+    quaternion.apply_to(@particle) unless @v_angle.zero?
+  end
+end
+
+class ConstantMomentumRotation < Rotation
+  attr_reader :radius
+
+  def initialize(particle, values)
+    super
+    @radius = particle.distance_from_center
+  end
+
+  def radius=(value)
+    factor = value / @radius
+    @particle.x *= factor
+    @particle.y *= factor
+    @particle.z *= factor
+    self.v_angle /= factor**2
   end
 end
 
 def random_direction(particle)
-  random_axis = [rand - 0.5, rand - 0.5, rand - 0.5]
-  ConstantRotation.new(particle, v_angle: 0.01, axis: random_axis)
+  random_axis = [0, 1, 0] # [rand - 0.5, rand - 0.5, rand - 0.5]
+  ConstantMomentumRotation.new(particle, v_angle: 0.01, axis: random_axis).tap { |rotation|
+    rotation.radius -= rand * 100
+  }
 end
 
 def setup(args)
@@ -152,6 +188,17 @@ end
 
 def tick(args)
   setup(args) if args.tick_count.zero?
+
+  if args.inputs.keyboard.key_down.up
+    args.state.movements.each do |m|
+      m.radius += 10
+    end
+  end
+  if args.inputs.keyboard.key_down.down
+    args.state.movements.each do |m|
+      m.radius -= 10
+    end
+  end
 
   render(args)
 end
