@@ -1,0 +1,7 @@
+#+begin_src text
+devid=kfischer_okarin
+devtitle=Kevin Fischer
+gameid=gamename
+gametitle=Game Name
+version=0.1
+#+end_src
