@@ -1,4 +1,5 @@
 require 'lib/debug_mode.rb'
+require 'lib/quaternion.rb'
 require 'lib/resources.rb'
 require 'lib/sprite_resources.rb'
 
@@ -11,50 +12,6 @@ class Array
 
   def z=(value)
     self[2] = value
-  end
-end
-
-Quaternion = Struct.new(:a, :b, :c, :d) do
-  def self.from_angle_and_axis(angle, x, y, z) # rubocop:disable Metrics/AbcSize, Naming/MethodParameterName
-    length = Math.sqrt(x**2 + y**2 + z**2)
-    sinus = Math.sin(angle / 2)
-
-    new(
-      Math.cos(angle / 2),
-      x * sinus / length,
-      y * sinus / length,
-      z * sinus / length
-    )
-  end
-
-  def apply_to(vector)
-    vector_quaternion = Quaternion.new(0, vector.x, vector.y, vector.z)
-    result = self * vector_quaternion * inverse
-    vector.x = result.b
-    vector.y = result.c
-    vector.z = result.d
-  end
-
-  def square_norm
-    a**2 + b**2 + c**2 + d**2
-  end
-
-  def *(other) # rubocop:disable Metrics/AbcSize
-    Quaternion.new(
-      a * other.a - b * other.b - c * other.c - d * other.d,
-      a * other.b + b * other.a + c * other.d - d * other.c,
-      a * other.c - b * other.d + c * other.a + d * other.b,
-      a * other.d + b * other.c - c * other.b + d * other.a
-    )
-  end
-
-  def inverse
-    factor = 1 / square_norm
-    Quaternion.new(a * factor, -b * factor, -c * factor, -d * factor)
-  end
-
-  def to_s
-    "Quaternion(#{a}, #{b}, #{c}, #{d})"
   end
 end
 
@@ -140,7 +97,7 @@ class Rotation
   end
 
   def quaternion
-    @quaternion ||= Quaternion.from_angle_and_axis(@v_angle, @axis.x, @axis.y, @axis.z)
+    @quaternion ||= DRT::Quaternion.from_angle_and_axis(@v_angle, @axis.x, @axis.y, @axis.z)
   end
 
   def tick
