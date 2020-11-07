@@ -36,7 +36,7 @@ module Resources
   # Add Resources#as_sprite
   module SpriteExtension
     def as_sprite(values = nil)
-      Sprite.new(self, values)
+      self.class.new(self, values)
     end
   end
 
