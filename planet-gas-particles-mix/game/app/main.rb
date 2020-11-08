@@ -59,20 +59,31 @@ class Particle < Sprite3D
   end
 end
 
-def randomly_positioned_on_sphere(particle, radius)
-  polar = rand * Math::PI
-  azimuth = rand * 2 * Math::PI
-
+def particle_at(particle, radius, polar, azimuth)
   sin_polar = Math.sin(polar)
 
   particle.with(
     x: radius * sin_polar * Math.cos(azimuth),
     y: radius * sin_polar * Math.sin(azimuth),
-    z: radius * Math.cos(polar),
-    r: rand * 255,
-    g: rand * 255,
-    b: rand * 255
+    z: radius * Math.cos(polar)
   )
+end
+
+def randomly_positioned_on_sphere(particle, radius)
+  polar = rand * Math::PI
+  azimuth = rand * 2 * Math::PI
+
+  particle_at(particle, radius, polar, azimuth)
+end
+
+def grid_angles(polar_resolution, azimuth_resolution)
+  polar_step = 160.to_radians / polar_resolution
+  azimuth_step = 360.to_radians / azimuth_resolution
+  polar_resolution.times.flat_map { |p|
+    azimuth_resolution.times.map { |a|
+      [10.to_radians + p * polar_step, a * azimuth_step]
+    }
+  }
 end
 
 class Rotation
@@ -129,8 +140,9 @@ end
 
 def setup(args)
   args.state.base_particle ||= Particle.new(Resources.sprites.particle, w: 64, h: 64)
-  particles = 500.times.map { randomly_positioned_on_sphere(args.state.base_particle, 200) }
-  args.state.particles = BubbleSortedList.new(particles) { |particle| -particle.z }
+  # args.state.particles = 200.times.map { randomly_positioned_on_sphere(args.state.base_particle, 200) }
+  args.state.particles = grid_angles(10, 20).map { |polar, azimuth| particle_at(args.state.base_particle, 200, polar, azimuth) }
+  args.state.sorted_particles = BubbleSortedList.new(args.state.particles) { |particle| -particle.z }
   args.state.movements = args.state.particles.map { |particle| random_direction(particle) }
 end
 
@@ -138,9 +150,9 @@ def render(args)
   args.outputs.background_color = [0, 0, 0]
   args.state.movements.each { |movement|
     movement.tick
-    args.state.particles.fix_sort_order(movement.particle)
+    args.state.sorted_particles.fix_sort_order(movement.particle)
   }
-  args.outputs.sprites << args.state.particles
+  args.outputs.sprites << args.state.sorted_particles
 end
 
 def tick(args)
