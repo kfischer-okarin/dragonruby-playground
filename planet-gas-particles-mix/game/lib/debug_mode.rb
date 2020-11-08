@@ -22,25 +22,43 @@ module DebugExtension
     def tick
       return if $gtk.production
 
-      @active = !@active if toggle_debug_mode?(@args.inputs)
-      $gtk.reset if reset_game?(@args.inputs)
+      handle_debug_function
 
+      render_debug_logs
+    end
+
+    private
+
+    DEBUG_FUNCTIONS = {
+      f9: :toggle_debug,
+      f11: :reset_with_same_seed,
+      f12: :reset
+    }.freeze
+
+    def handle_debug_function
+      pressed_key = DEBUG_FUNCTIONS.keys.find { |key| @args.inputs.keyboard.key_down.send(key) }
+      send(DEBUG_FUNCTIONS[pressed_key]) if pressed_key
+    end
+
+    def toggle_debug
+      @active = !@active
+    end
+
+    def reset_with_same_seed
+      $gtk.reset
+    end
+
+    def reset
+      $gtk.reset seed: (Time.now.to_f * 1000).to_i
+    end
+
+    def render_debug_logs
       log($gtk.current_framerate.to_i.to_s)
       log('DEBUG MODE') if @active
 
       @args.outputs.debug << @debug_logs
       @debug_logs.clear
       @last_debug_y = 720
-    end
-
-    private
-
-    def toggle_debug_mode?(inputs)
-      inputs.keyboard.key_up.d && inputs.keyboard.key_up.alt
-    end
-
-    def reset_game?(inputs)
-      inputs.keyboard.key_up.r && inputs.keyboard.key_up.alt
     end
   end
 
