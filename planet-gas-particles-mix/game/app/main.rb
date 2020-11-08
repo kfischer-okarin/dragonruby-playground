@@ -40,12 +40,13 @@ class Particle < Sprite3D
   end
 
   def draw_override(ffi_draw)
+    alpha = 255 * (@z_factor - 0.4)
     actual_w = w
     actual_h = h
     # x, y, w, h, path
     ffi_draw.draw_sprite_3 @x + 640 - actual_w.half, @y + 360 - actual_h.half, actual_w, actual_h, path,
                            # angle, alpha, red_saturation, green_saturation, blue_saturation
-                           nil, a, r, g, b,
+                           nil, alpha, r, g, b,
                            # tile_x, tile_y, tile_w, tile_h
                            nil, nil, nil, nil,
                            # flip_horizontally, flip_vertically,
@@ -54,10 +55,6 @@ class Particle < Sprite3D
                            nil, nil,
                            # source_x, source_y, source_w, source_h
                            nil, nil, nil, nil
-  end
-
-  def a
-    255 * (@z_factor - 0.4)
   end
 end
 
