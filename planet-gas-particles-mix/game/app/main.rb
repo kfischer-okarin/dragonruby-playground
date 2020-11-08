@@ -58,6 +58,64 @@ class Particle < Sprite3D
   end
 end
 
+class SortedByZ
+  include Enumerable
+
+  def initialize(values)
+    @indexes = {}
+    @values = []
+    values.sort_by(&method(:sort_key)).each_with_index do |value, index|
+      @values << value
+      @indexes[value] = index
+    end
+  end
+
+  def sort_key(value)
+    -value.z
+  end
+
+  def fix_sort_order(value)
+    current_index = @indexes[value]
+    while should_be_swapped?(current_index - 1, current_index)
+      swap(current_index - 1, current_index)
+      current_index -= 1
+    end
+    while should_be_swapped?(current_index, current_index + 1)
+      swap(current_index, current_index + 1)
+      current_index += 1
+    end
+  end
+
+  def should_be_swapped?(left_index, right_index)
+    return false if left_index.negative? || right_index >= length
+
+    sort_key(@values[right_index]) < sort_key(@values[left_index])
+  end
+
+  def swap(index1, index2)
+    value1 = @values[index1]
+    value2 = @values[index2]
+    @values[index1] = value2
+    @values[index2] = value1
+    @indexes[value1] = index2
+    @indexes[value2] = index1
+  end
+
+  def value(index)
+    @values[index]
+  end
+
+  def length
+    @values.length
+  end
+
+  def each(&block)
+    @values.each do |value|
+      block.call(value)
+    end
+  end
+end
+
 def randomly_positioned_on_sphere(particle, radius)
   polar = rand * Math::PI
   azimuth = rand * 2 * Math::PI
@@ -75,7 +133,7 @@ def randomly_positioned_on_sphere(particle, radius)
 end
 
 class Rotation
-  attr_reader :v_angle, :axis
+  attr_reader :particle, :v_angle, :axis
 
   def initialize(particle, values)
     @particle = particle
@@ -128,17 +186,21 @@ end
 
 def setup(args)
   args.state.base_particle ||= Particle.new(Resources.sprites.particle, w: 64, h: 64)
-  args.state.particles = 100.times.map { randomly_positioned_on_sphere(args.state.base_particle, 200) }
+  args.state.particles = SortedByZ.new(
+    500.times.map { randomly_positioned_on_sphere(args.state.base_particle, 200) }
+  )
   args.state.movements = args.state.particles.map { |particle| random_direction(particle) }
+
 end
 
 def render(args)
   args.outputs.background_color = [0, 0, 0]
-  args.state.movements.each(&:tick)
+  args.state.movements.each { |movement|
+    movement.tick
+    args.state.particles.fix_sort_order(movement.particle)
+  }
   args.outputs.sprites << args.state.particles
 end
-
-
 
 def tick(args)
   setup(args) if args.tick_count.zero?
