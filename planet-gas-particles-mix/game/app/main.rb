@@ -76,16 +76,6 @@ def randomly_positioned_on_sphere(particle, radius)
   particle_at(particle, radius, polar, azimuth)
 end
 
-def grid_angles(polar_resolution, azimuth_resolution)
-  polar_step = 160.to_radians / polar_resolution
-  azimuth_step = 360.to_radians / azimuth_resolution
-  polar_resolution.times.flat_map { |p|
-    azimuth_resolution.times.map { |a|
-      [10.to_radians + p * polar_step, a * azimuth_step]
-    }
-  }
-end
-
 class Rotation
   attr_reader :particle, :v_angle, :axis
 
@@ -140,8 +130,7 @@ end
 
 def setup(args)
   args.state.base_particle ||= Particle.new(Resources.sprites.particle, w: 64, h: 64)
-  # args.state.particles = 200.times.map { randomly_positioned_on_sphere(args.state.base_particle, 200) }
-  args.state.particles = grid_angles(10, 20).map { |polar, azimuth| particle_at(args.state.base_particle, 200, polar, azimuth) }
+  args.state.particles = 200.times.map { randomly_positioned_on_sphere(args.state.base_particle, 200) }
   args.state.sorted_particles = BubbleSortedList.new(args.state.particles) { |particle| -particle.z }
   args.state.movements = args.state.particles.map { |particle| random_direction(particle) }
 end
