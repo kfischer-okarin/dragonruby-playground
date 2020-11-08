@@ -1,3 +1,4 @@
+require 'lib/bubble_sorted_list.rb'
 require 'lib/debug_mode.rb'
 require 'lib/quaternion.rb'
 require 'lib/resources.rb'
@@ -55,64 +56,6 @@ class Particle < Sprite3D
                            nil, nil,
                            # source_x, source_y, source_w, source_h
                            nil, nil, nil, nil
-  end
-end
-
-class SortedByZ
-  include Enumerable
-
-  def initialize(values)
-    @indexes = {}
-    @values = []
-    values.sort_by(&method(:sort_key)).each_with_index do |value, index|
-      @values << value
-      @indexes[value] = index
-    end
-  end
-
-  def sort_key(value)
-    -value.z
-  end
-
-  def fix_sort_order(value)
-    current_index = @indexes[value]
-    while should_be_swapped?(current_index - 1, current_index)
-      swap(current_index - 1, current_index)
-      current_index -= 1
-    end
-    while should_be_swapped?(current_index, current_index + 1)
-      swap(current_index, current_index + 1)
-      current_index += 1
-    end
-  end
-
-  def should_be_swapped?(left_index, right_index)
-    return false if left_index.negative? || right_index >= length
-
-    sort_key(@values[right_index]) < sort_key(@values[left_index])
-  end
-
-  def swap(index1, index2)
-    value1 = @values[index1]
-    value2 = @values[index2]
-    @values[index1] = value2
-    @values[index2] = value1
-    @indexes[value1] = index2
-    @indexes[value2] = index1
-  end
-
-  def value(index)
-    @values[index]
-  end
-
-  def length
-    @values.length
-  end
-
-  def each(&block)
-    @values.each do |value|
-      block.call(value)
-    end
   end
 end
 
@@ -186,11 +129,9 @@ end
 
 def setup(args)
   args.state.base_particle ||= Particle.new(Resources.sprites.particle, w: 64, h: 64)
-  args.state.particles = SortedByZ.new(
-    500.times.map { randomly_positioned_on_sphere(args.state.base_particle, 200) }
-  )
+  particles = 500.times.map { randomly_positioned_on_sphere(args.state.base_particle, 200) }
+  args.state.particles = BubbleSortedList.new(particles) { |particle| -particle.z }
   args.state.movements = args.state.particles.map { |particle| random_direction(particle) }
-
 end
 
 def render(args)
