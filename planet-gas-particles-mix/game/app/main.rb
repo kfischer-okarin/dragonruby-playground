@@ -17,6 +17,66 @@ class Array
   end
 end
 
+class Scrollbar
+  attr_reader :value
+
+  def initialize(values = nil)
+    initial_values = values || {}
+    self.value = initial_values[:value] || 0
+    @x = initial_values[:x]
+    @y = initial_values[:y]
+  end
+
+  def bounds
+    [@x, @y, scrollbar_sprite.data[:w], scrollbar_sprite.data[:h]]
+  end
+
+  def value=(new_value)
+    @value = new_value.clamp(0, 1)
+  end
+
+  def tick(args)
+    mouse = args.inputs.mouse
+    self.value = (mouse.x - min_x) / (max_x - min_x) if mouse.button_left && mouse.inside_rect?(bounds)
+  end
+
+  def primitive_marker
+    :sprite
+  end
+
+  def draw_override(ffi_draw)
+    draw_background(ffi_draw)
+    draw_thumb(ffi_draw)
+  end
+
+  private
+
+  def scrollbar_sprite
+    Resources.sprites.scrollbar
+  end
+
+  def thumb_sprite
+    Resources.sprites.scrollbar_thumb
+  end
+
+  def draw_background(ffi_draw)
+    ffi_draw.draw_sprite(*bounds, scrollbar_sprite.path)
+  end
+
+  def draw_thumb(ffi_draw)
+    thumb_x = @x + @value * (max_x - min_x)
+    ffi_draw.draw_sprite thumb_x, @y, thumb_sprite.data[:w], thumb_sprite.data[:h], thumb_sprite.path
+  end
+
+  def min_x
+    @x + thumb_sprite.data[:w].half
+  end
+
+  def max_x
+    @x + scrollbar_sprite.data[:w] - thumb_sprite.data[:w].half
+  end
+end
+
 class Sprite3D < Resources::Sprite
   attr_reader :z
 
@@ -134,6 +194,7 @@ def setup(args)
   args.state.particles = 200.times.map { randomly_positioned_on_sphere(args.state.base_particle, 200) }
   args.state.sorted_particles = BubbleSortedList.new(args.state.particles) { |particle| -particle.z }
   args.state.movements = args.state.particles.map { |particle| random_direction(particle) }
+  args.state.bar = Scrollbar.new(x: 20, y: 20)
 end
 
 def render(args)
@@ -143,6 +204,7 @@ def render(args)
     args.state.sorted_particles.fix_sort_order(movement.particle)
   }
   args.outputs.sprites << args.state.sorted_particles
+  args.outputs.sprites << args.state.bar
 end
 
 def tick(args)
@@ -158,6 +220,8 @@ def tick(args)
       m.radius -= 10
     end
   end
+
+  args.state.bar.tick(args)
 
   render(args)
 end
