@@ -7,6 +7,7 @@ require 'lib/sprite_resources.rb'
 
 require 'app/resources.rb'
 require 'app/ui/panel.rb'
+require 'app/ui/vertical_layout.rb'
 
 class Array
   def z
@@ -19,7 +20,8 @@ class Array
 end
 
 class Scrollbar
-  attr_reader :value
+  attr_accessor :x, :y, :w
+  attr_reader :h, :value
 
   def initialize(values = nil)
     initial_values = values || {}
@@ -228,7 +230,10 @@ def setup(args)
   args.state.sorted_particles = BubbleSortedList.new(args.state.particles) { |particle| -particle.z }
   args.state.movements = args.state.particles.map { |particle| random_direction(particle) }
   args.state.panel = UI::Panel.new(x: 20, y: 50, w: 200, h: 400)
-  args.state.panel << Scrollbar.new(x: 50, y: 100, w: 140)
+  layout = UI::VerticalLayout.new(args.state.panel, padding_vertical: 32, padding_horizontal: 20)
+  args.state.panel << layout
+  layout << Scrollbar.new
+  layout << Scrollbar.new
 end
 
 def render(args)
