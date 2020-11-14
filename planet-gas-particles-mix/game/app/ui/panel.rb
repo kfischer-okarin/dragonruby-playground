@@ -11,6 +11,17 @@ module UI
       @y = values[:y]
       @w = values[:w]
       @h = values[:h]
+      @children = []
+    end
+
+    def <<(child)
+      @children << child
+    end
+
+    def tick(args)
+      @children.each do |child|
+        child.tick(args)
+      end
     end
 
     def primitive_marker
@@ -18,6 +29,15 @@ module UI
     end
 
     def draw_override(ffi_draw)
+      draw_self(ffi_draw)
+      @children.each do |child|
+        child.draw_override(ffi_draw)
+      end
+    end
+
+    private
+
+    def draw_self(ffi_draw)
       [
         bottom_left, bottom_right, top_left, top_right,
         bottom_side, left_side, right_side, top_side,
@@ -26,8 +46,6 @@ module UI
         draw_part(ffi_draw, part)
       }
     end
-
-    private
 
     def bottom_left
       @bottom_left ||= { x: @x, y: @y, w: @corner_size, h: @corner_size, source_x: 0, source_y: 0 }

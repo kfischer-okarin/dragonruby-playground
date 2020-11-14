@@ -228,7 +228,7 @@ def setup(args)
   args.state.sorted_particles = BubbleSortedList.new(args.state.particles) { |particle| -particle.z }
   args.state.movements = args.state.particles.map { |particle| random_direction(particle) }
   args.state.panel = UI::Panel.new(x: 20, y: 50, w: 200, h: 400)
-  args.state.bar = Scrollbar.new(x: 50, y: 100, w: 140)
+  args.state.panel << Scrollbar.new(x: 50, y: 100, w: 140)
 end
 
 def render(args)
@@ -239,7 +239,6 @@ def render(args)
   }
   args.outputs.sprites << args.state.sorted_particles
   args.outputs.sprites << args.state.panel
-  args.outputs.sprites << args.state.bar
 end
 
 def tick(args)
@@ -256,7 +255,7 @@ def tick(args)
     end
   end
 
-  args.state.bar.tick(args)
+  args.state.panel.tick(args)
 
   render(args)
 end
