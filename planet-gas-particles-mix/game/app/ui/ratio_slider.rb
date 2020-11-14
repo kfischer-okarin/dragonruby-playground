@@ -119,7 +119,7 @@ module UI
     end
 
     attr_accessor :x, :y, :w
-    attr_reader :h
+    attr_reader :h, :input_handlers
 
     def initialize(values = nil)
       initial_values = values || {}
@@ -129,6 +129,7 @@ module UI
       @y = initial_values[:y]
       @w = initial_values[:w] || Resources.sprites.scrollbar.data[:w]
       @h = @background.h
+      @input_handlers = []
     end
 
     def thumb_values
@@ -186,6 +187,7 @@ module UI
       dragged_thumb.tick(args)
       adjust_left_thumbs
       adjust_right_thumbs
+      notify_input_handlers
       @dragged_thumb_index = nil unless dragged_thumb.dragging?
     end
 
@@ -204,6 +206,12 @@ module UI
       right_thumbs = @thumbs[(@dragged_thumb_index + 1)..-1]
       right_thumbs.each do |thumb|
         thumb.value = dragged_thumb.value if thumb.value < dragged_thumb.value
+      end
+    end
+
+    def notify_input_handlers
+      @input_handlers.each do |handler|
+        handler.call(thumb_values)
       end
     end
 

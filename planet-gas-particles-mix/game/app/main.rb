@@ -133,15 +133,19 @@ def random_direction(particle)
 end
 
 class GasCompositionSetting < UI::Panel
-  def initialize
+  MOLECULE_COLORS = [
+    { r: 228, g: 59, b: 68 },
+    { r: 62, g: 137, b: 72 },
+    { r: 0, g: 149, b: 233 }
+  ].freeze
+
+  def initialize(particles)
     super(x: 30, y: 30, w: 1220, h: 100)
+    @particles = particles
     @layout = UI::Layout.new(self, padding_vertical: 32, padding_horizontal: 20)
-    @colors = [
-      { r: 228, g: 59, b: 68 },
-      { r: 62, g: 137, b: 72 },
-      { r: 0, g: 149, b: 233 }
-    ]
-    @ratios = UI::RatioSlider.new(colors: @colors)
+    @ratios = UI::RatioSlider.new(colors: MOLECULE_COLORS)
+    @ratios.input_handlers << method(:on_ratio_changed)
+    on_ratio_changed(@ratios.thumb_values)
     build_layout
   end
 
@@ -151,14 +155,30 @@ class GasCompositionSetting < UI::Panel
     @layout << @ratios
     self << @layout
   end
+
+  def on_ratio_changed(thumb_values)
+    threshold_indexes = [0, *thumb_values, 1].map { |value| value * @particles.size }
+    (0...(threshold_indexes.size - 1)).each do |index|
+      left = threshold_indexes[index]
+      right = threshold_indexes[index + 1]
+      @particles[left..right].each do |particle|
+        color = MOLECULE_COLORS[index]
+        particle.r = color.r
+        particle.g = color.g
+        particle.b = color.b
+      end
+    end
+  end
 end
 
 def setup(args)
   args.state.base_particle ||= Particle.new(Resources.sprites.particle, w: 64, h: 64)
-  args.state.particles = 200.times.map { randomly_positioned_on_sphere(args.state.base_particle, 200) }
+  args.state.particles = 200.times.map { |index|
+    randomly_positioned_on_sphere(args.state.base_particle, 200)
+  }
   args.state.sorted_particles = BubbleSortedList.new(args.state.particles) { |particle| -particle.z }
   args.state.movements = args.state.particles.map { |particle| random_direction(particle) }
-  args.state.panel = GasCompositionSetting.new
+  args.state.panel = GasCompositionSetting.new(args.state.particles)
 end
 
 def render(args)
