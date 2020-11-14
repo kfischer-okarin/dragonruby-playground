@@ -6,9 +6,9 @@ require 'lib/resources.rb'
 require 'lib/sprite_resources.rb'
 
 require 'app/resources.rb'
+require 'app/ui/layout.rb'
 require 'app/ui/panel.rb'
 require 'app/ui/scrollbar.rb'
-require 'app/ui/vertical_layout.rb'
 
 class Array
   def z
@@ -135,7 +135,7 @@ end
 class GasCompositionSetting < UI::Panel
   def initialize
     super(x: 20, y: 50, w: 200, h: 400)
-    @layout = UI::VerticalLayout.new(self, padding_vertical: 32, padding_horizontal: 20)
+    @layout = UI::Layout.new(self, padding_vertical: 32, padding_horizontal: 20)
     @hydrogen_ratio = UI::Scrollbar.new
     @metal_ratio = UI::Scrollbar.new
     @layout << @hydrogen_ratio
