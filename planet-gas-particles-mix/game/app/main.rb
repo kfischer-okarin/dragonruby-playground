@@ -8,7 +8,7 @@ require 'lib/sprite_resources.rb'
 require 'app/resources.rb'
 require 'app/ui/layout.rb'
 require 'app/ui/panel.rb'
-require 'app/ui/scrollbar.rb'
+require 'app/ui/ratio_slider.rb'
 
 class Array
   def z
@@ -134,12 +134,21 @@ end
 
 class GasCompositionSetting < UI::Panel
   def initialize
-    super(x: 20, y: 50, w: 200, h: 400)
+    super(x: 30, y: 30, w: 1220, h: 100)
     @layout = UI::Layout.new(self, padding_vertical: 32, padding_horizontal: 20)
-    @hydrogen_ratio = UI::Scrollbar.new
-    @metal_ratio = UI::Scrollbar.new
-    @layout << @hydrogen_ratio
-    @layout << @metal_ratio
+    @colors = [
+      { r: 228, g: 59, b: 68 },
+      { r: 62, g: 137, b: 72 },
+      { r: 0, g: 149, b: 233 }
+    ]
+    @ratios = UI::RatioSlider.new(colors: @colors)
+    build_layout
+  end
+
+  private
+
+  def build_layout
+    @layout << @ratios
     self << @layout
   end
 end
