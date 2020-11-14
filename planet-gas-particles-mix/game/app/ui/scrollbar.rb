@@ -2,7 +2,7 @@ module UI
   # Scrollbar that represents a value between 0 and 1
   class Scrollbar
     attr_accessor :x, :y, :w
-    attr_reader :h, :value
+    attr_reader :h, :value, :on_input_handlers
 
     def initialize(values = nil)
       initial_values = values || {}
@@ -13,6 +13,7 @@ module UI
       @h = scrollbar_sprite.data[:h]
       @path = scrollbar_sprite.path
       @end_size = 16
+      @on_input_handlers = []
     end
 
     def bounds
@@ -25,7 +26,13 @@ module UI
 
     def tick(args)
       mouse = args.inputs.mouse
-      self.value = (mouse.x - min_x) / (max_x - min_x) if mouse.button_left && mouse.inside_rect?(bounds)
+      return unless mouse.button_left && mouse.inside_rect?(bounds)
+
+      self.value = (mouse.x - min_x) / (max_x - min_x)
+
+      @on_input_handlers.each do |handler|
+        handler.call(@value)
+      end
     end
 
     def primitive_marker
