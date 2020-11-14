@@ -132,16 +132,24 @@ def random_direction(particle)
   }
 end
 
+class GasCompositionSetting < UI::Panel
+  def initialize
+    super(x: 20, y: 50, w: 200, h: 400)
+    @layout = UI::VerticalLayout.new(self, padding_vertical: 32, padding_horizontal: 20)
+    @hydrogen_ratio = UI::Scrollbar.new
+    @metal_ratio = UI::Scrollbar.new
+    @layout << @hydrogen_ratio
+    @layout << @metal_ratio
+    self << @layout
+  end
+end
+
 def setup(args)
   args.state.base_particle ||= Particle.new(Resources.sprites.particle, w: 64, h: 64)
   args.state.particles = 200.times.map { randomly_positioned_on_sphere(args.state.base_particle, 200) }
   args.state.sorted_particles = BubbleSortedList.new(args.state.particles) { |particle| -particle.z }
   args.state.movements = args.state.particles.map { |particle| random_direction(particle) }
-  args.state.panel = UI::Panel.new(x: 20, y: 50, w: 200, h: 400)
-  layout = UI::VerticalLayout.new(args.state.panel, padding_vertical: 32, padding_horizontal: 20)
-  args.state.panel << layout
-  layout << Scrollbar.new
-  layout << Scrollbar.new
+  args.state.panel = GasCompositionSetting.new
 end
 
 def render(args)
