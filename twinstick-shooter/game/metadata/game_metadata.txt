@@ -1,0 +1,6 @@
+devid=kfischer_okarin
+devtitle=Kevin Fischer
+gameid=gamename
+gametitle=Game Name
+version=0.1
+icon=metadata/icon.png
