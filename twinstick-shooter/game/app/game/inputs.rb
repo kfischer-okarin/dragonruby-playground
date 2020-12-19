@@ -1,25 +1,28 @@
+require 'app/game/inputs/directional_input.rb'
+
 class Game
   # Interface for input
   class Inputs
+    def self.direction
+      @direction ||= DirectionalInput.new(:w, :a, :s, :d)
+    end
+
+    def self.fire_direction
+      @fire_direction ||= DirectionalInput.new(:up, :left, :down, :right)
+    end
+
     def initialize(args)
       @args = args
-      calc_direction
+      @direction_x, @direction_y = Inputs.direction.value(@args.inputs)
+      @fire_direction_x, @fire_direction_y = Inputs.fire_direction.value(@args.inputs)
     end
 
     def direction
       [@direction_x, @direction_y]
     end
 
-    private
-
-    def calc_direction
-      key_held = @args.inputs.keyboard.key_held
-      @direction_x = 0
-      @direction_x = -1 if key_held.left
-      @direction_x = 1 if key_held.right
-      @direction_y = 0
-      @direction_y = -1 if key_held.down
-      @direction_y = 1 if key_held.up
+    def fire_direction
+      [@fire_direction_x, @fire_direction_y]
     end
   end
 end
