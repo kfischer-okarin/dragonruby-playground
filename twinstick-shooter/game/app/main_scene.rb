@@ -12,6 +12,13 @@ class MainScene
   end
 
   def render(game_outputs)
+    game_outputs.draw background
     game_outputs.draw [@position.x, @position.y, 20, 20, 255, 0, 0].solid
+  end
+
+  private
+
+  def background
+    @background ||= Primitives::Sprite.new(Resources.sprites.background)
   end
 end

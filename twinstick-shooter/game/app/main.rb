@@ -4,6 +4,7 @@ require 'lib/resources.rb'
 require 'lib/vector_extensions.rb'
 
 require 'app/resources.rb'
+require 'app/primitives.rb'
 require 'app/game.rb'
 require 'app/main_scene.rb'
 
