@@ -1,4 +1,5 @@
 require 'app/collisions.rb'
+require 'app/character_movement.rb'
 require 'app/entity.rb'
 
 class MainScene
@@ -6,8 +7,11 @@ class MainScene
 
   def initialize
     @collisions = Collisions.new
-    @movement_direction = [0, 0]
-    @position = [160, 90]
+    @character_movement = CharacterMovement.new(@collisions)
+    @player = Entity.new(
+      position: [160, 90],
+      movement_direction: [0, 0]
+    )
     @stage = Entity.new(
       collider: Collisions::CompositeCollider.new([
         Collisions::RectCollider.new(0, 0, 320, 20),
@@ -18,16 +22,17 @@ class MainScene
       wall: true
     )
     @collisions.register @stage
+    @character_movement.register @player
   end
 
   def tick(game_inputs)
-    @movement_direction = game_inputs.direction
-    @position = @position.add_vector @movement_direction
+    @player.movement_direction = game_inputs.direction
+    @character_movement.tick
   end
 
   def render(game_outputs)
     game_outputs.draw background
-    game_outputs.draw [@position.x, @position.y, 10, 16, 255, 0, 0].solid
+    game_outputs.draw [@player.position.x, @player.position.y, 10, 16, 255, 0, 0].solid
   end
 
   private

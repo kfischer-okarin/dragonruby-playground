@@ -6,8 +6,14 @@ class Entity
       @component_types << key
 
       define_singleton_method key do
-        value
+        instance_variable_get(:"@#{key}")
       end
+
+      define_singleton_method "#{key}=" do |new_value|
+        instance_variable_set(:"@#{key}", new_value)
+      end
+
+      instance_variable_set(:"@#{key}", value)
     end
   end
 
