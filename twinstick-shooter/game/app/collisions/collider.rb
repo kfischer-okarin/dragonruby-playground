@@ -7,6 +7,10 @@ class Collisions
     def collides_with?(other)
       @colliders.any? { |collider| collider.collides_with?(other) }
     end
+
+    def offset_by(offset)
+      CompositeCollider.new(@colliders.map { |collider| collider.offset_by(offset) })
+    end
   end
 
   RectCollider = Struct.new(:x, :y, :w, :h) do
@@ -19,7 +23,7 @@ class Collisions
     end
 
     def right
-      x + w
+      x + w - 1
     end
 
     def bottom
@@ -27,7 +31,11 @@ class Collisions
     end
 
     def top
-      y + h
+      y + h - 1
+    end
+
+    def offset_by(offset)
+      RectCollider.new(x + offset.x, y + offset.y, w, h)
     end
 
     private
@@ -42,7 +50,7 @@ class Collisions
   end
 
   RectCollider::COLLISION_METHODS = {
-    RectCollider => :collides_with_rect,
+    RectCollider => :collides_with_rect?,
     CompositeCollider => :collides_with_composite?
   }
 end

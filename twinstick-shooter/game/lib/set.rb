@@ -1,4 +1,6 @@
 class Set
+  include Enumerable
+
   def initialize(values = nil)
     @values = {}
     return unless values
@@ -21,8 +23,6 @@ class Set
   end
 
   def each(&block)
-    @values.each_key do |k|
-      block.call(k)
-    end
+    @values.each_key(&block)
   end
 end

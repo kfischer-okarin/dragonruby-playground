@@ -10,7 +10,8 @@ class MainScene
     @character_movement = CharacterMovement.new(@collisions)
     @player = Entity.new(
       position: [160, 90],
-      movement_direction: [0, 0]
+      movement_direction: [0, 0],
+      collider: ->(player) { Collisions::RectCollider.new(player.position.x, player.position.y, 10, 10) }
     )
     @stage = Entity.new(
       collider: Collisions::CompositeCollider.new([
