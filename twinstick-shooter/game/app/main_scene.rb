@@ -12,7 +12,7 @@ class MainScene
     @player = Entity.new(
       position: [160, 90],
       movement_direction: [0, 0],
-      collider: ->(player) { Collisions::RectCollider.new(player.position.x, player.position.y, 10, 10) }
+      collider: ->(player) { Collisions::RectCollider.new(player.position.x, player.position.y, 10, 6) }
     )
     @stage = Entity.new(
       collider: Collisions::CompositeCollider.new([
@@ -37,6 +37,7 @@ class MainScene
   def render(game_outputs)
     game_outputs.draw background
     game_outputs.draw @player_sprite
+    game_outputs.draw [@player.collider.x, @player.collider.y, @player.collider.w, @player.collider.h, 255, 0, 0].border if $args.debug.active?
   end
 
   private

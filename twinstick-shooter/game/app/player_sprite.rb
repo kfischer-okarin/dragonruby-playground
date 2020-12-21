@@ -3,6 +3,7 @@ class PlayerSprite < Primitives::Sprite
     super(Resources.sprites.character, w: 16, h: 16, source_w: 16, source_h: 16)
     @player = player
     self.orientation = [0, -1]
+    @frame = 0
   end
 
   SOURCE_Y = {
@@ -12,16 +13,19 @@ class PlayerSprite < Primitives::Sprite
     [-1, 0] => 16
   }.freeze
 
+  FRAMES = [0] * 5 + [16] * 5 + [32] * 5 + [16] * 5
+
   def orientation=(value)
     @orientation = value
-    @source_x = 16
     @source_y = SOURCE_Y[value]
     @flip_horizontally = value.x.negative?
+    @frame = 0
   end
 
   def tick
     update_orientation
     update_position
+    update_animation_frame
   end
 
   def update_orientation
@@ -31,8 +35,18 @@ class PlayerSprite < Primitives::Sprite
   end
 
   def update_position
-    @x = @player.position.x - 4
-    @y = @player.position.y
+    @x = @player.position.x - 3
+    @y = @player.position.y - 1
+  end
+
+  def update_animation_frame
+    if movement_direction.zero?
+      @source_x = 16
+      @frame = 0
+    else
+      @source_x = FRAMES[@frame]
+      @frame = (@frame + 1) % FRAMES.size
+    end
   end
 
   def movement_direction
