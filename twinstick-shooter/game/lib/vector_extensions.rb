@@ -1,4 +1,8 @@
 module ArrayVectorExtensions
+  def zero?
+    value(0).zero? && value(1).zero?
+  end
+
   def diagonal?
     !value(0).zero? && !value(1).zero?
   end

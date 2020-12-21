@@ -1,6 +1,7 @@
 require 'app/collisions.rb'
 require 'app/character_movement.rb'
 require 'app/entity.rb'
+require 'app/player_sprite.rb'
 
 class MainScene
   attr_reader :next_scene
@@ -24,16 +25,18 @@ class MainScene
     )
     @collisions.register @stage
     @character_movement.register @player
+    @player_sprite = PlayerSprite.new(@player)
   end
 
   def tick(game_inputs)
     @player.movement_direction = game_inputs.direction
     @character_movement.tick
+    @player_sprite.tick
   end
 
   def render(game_outputs)
     game_outputs.draw background
-    game_outputs.draw [@player.position.x, @player.position.y, 10, 16, 255, 0, 0].solid
+    game_outputs.draw @player_sprite
   end
 
   private
