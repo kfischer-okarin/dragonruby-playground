@@ -1,6 +1,7 @@
 require 'app/collisions.rb'
 require 'app/bullet_movement.rb'
 require 'app/character_movement.rb'
+require 'app/dynamic_sprites.rb'
 require 'app/shooting.rb'
 
 require 'app/entity.rb'
@@ -11,6 +12,7 @@ class MainScene
   attr_reader :next_scene
 
   def initialize
+    @dynamic_sprites = DynamicSprites.new
     @collisions = Collisions.new
     @character_movement = CharacterMovement.new(@collisions)
     @bullet_movement = BulletMovement.new(@collisions)
@@ -19,6 +21,7 @@ class MainScene
       position: [160, 90],
       movement_direction: [0, 0],
       fire_direction: [0, 0],
+      sprite: ->(player) { PlayerSprite.new(player) },
       collider: ->(player) { Collisions::RectCollider.new(player.position.x, player.position.y, 10, 6) },
       weapon: SonicGun.new(cooldown: 20)
     )
@@ -31,27 +34,35 @@ class MainScene
       ]),
       wall: true
     )
+    @dynamic_sprites.register @player
     @collisions.register @stage
     @character_movement.register @player
     @shooting.register @player
-    @player_sprite = PlayerSprite.new(@player)
   end
 
   def tick(game_inputs)
-    @player.movement_direction = game_inputs.direction
-    @player.fire_direction = game_inputs.fire_direction
-    @character_movement.tick
-    @shooting.tick
-    @player_sprite.tick
+    process_inputs(game_inputs)
+    system_ticks
   end
 
   def render(game_outputs)
     game_outputs.draw background
-    game_outputs.draw @player_sprite
+    game_outputs.draw @dynamic_sprites.sprites
     game_outputs.draw [@player.collider.x, @player.collider.y, @player.collider.w, @player.collider.h, 255, 0, 0].border if $args.debug.active?
   end
 
   private
+
+  def process_inputs(game_inputs)
+    @player.movement_direction = game_inputs.direction
+    @player.fire_direction = game_inputs.fire_direction
+  end
+
+  def system_ticks
+    @character_movement.tick
+    @shooting.tick
+    @dynamic_sprites.tick
+  end
 
   def background
     @background ||= Primitives::Sprite.new(Resources.sprites.background)
