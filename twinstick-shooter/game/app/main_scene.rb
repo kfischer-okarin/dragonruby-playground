@@ -1,7 +1,11 @@
 require 'app/collisions.rb'
+require 'app/bullet_movement.rb'
 require 'app/character_movement.rb'
+require 'app/shooting.rb'
+
 require 'app/entity.rb'
 require 'app/player_sprite.rb'
+require 'app/sonic_gun.rb'
 
 class MainScene
   attr_reader :next_scene
@@ -9,11 +13,14 @@ class MainScene
   def initialize
     @collisions = Collisions.new
     @character_movement = CharacterMovement.new(@collisions)
+    @bullet_movement = BulletMovement.new(@collisions)
+    @shooting = Shooting.new(@bullet_movement)
     @player = Entity.new(
       position: [160, 90],
       movement_direction: [0, 0],
       fire_direction: [0, 0],
-      collider: ->(player) { Collisions::RectCollider.new(player.position.x, player.position.y, 10, 6) }
+      collider: ->(player) { Collisions::RectCollider.new(player.position.x, player.position.y, 10, 6) },
+      weapon: SonicGun.new(cooldown: 20)
     )
     @stage = Entity.new(
       collider: Collisions::CompositeCollider.new([
@@ -26,6 +33,7 @@ class MainScene
     )
     @collisions.register @stage
     @character_movement.register @player
+    @shooting.register @player
     @player_sprite = PlayerSprite.new(@player)
   end
 
@@ -33,6 +41,7 @@ class MainScene
     @player.movement_direction = game_inputs.direction
     @player.fire_direction = game_inputs.fire_direction
     @character_movement.tick
+    @shooting.tick
     @player_sprite.tick
   end
 
