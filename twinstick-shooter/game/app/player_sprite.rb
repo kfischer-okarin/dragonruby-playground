@@ -29,7 +29,7 @@ class PlayerSprite < Primitives::Sprite
   end
 
   def tick
-    update_orientation
+    update_orientation # TODO: Move this into character_movement system and entity property!
     update_position
     update_animation_frame
   end
@@ -37,7 +37,7 @@ class PlayerSprite < Primitives::Sprite
   def update_orientation
     return unless orientation_changed?
 
-    self.orientation = direction.y.zero? ? [direction.x, 0] : [0, direction.y]
+    self.orientation = @player.orientation
   end
 
   def update_position
@@ -60,21 +60,7 @@ class PlayerSprite < Primitives::Sprite
     !@player.fire_direction.zero?
   end
 
-  def direction
-    if shooting?
-      @player.fire_direction
-    else
-      @player.movement_direction
-    end
-  end
-
   def orientation_changed?
-    return false if direction.zero?
-
-    if @orientation.x.zero?
-      direction.y != @orientation.y
-    else
-      direction.x != @orientation.x
-    end
+    @player.orientation != @orientation
   end
 end

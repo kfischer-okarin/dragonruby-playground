@@ -32,8 +32,8 @@ class SonicGun
 
   def create_bullet(entity)
     Entity.new(
-      position: entity.position.add_vector(OFFSET[entity.fire_direction]),
-      movement_direction: entity.fire_direction.dup,
+      position: entity.position.add_vector(OFFSET[entity.orientation]),
+      movement_direction: entity.orientation.dup,
       sprite: ->(bullet) { Sprite.new(bullet) }
     )
   end

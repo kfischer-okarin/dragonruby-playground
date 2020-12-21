@@ -1,6 +1,7 @@
 require 'app/collisions.rb'
 require 'app/bullet_movement.rb'
 require 'app/character_movement.rb'
+require 'app/character_orientation.rb'
 require 'app/dynamic_sprites.rb'
 require 'app/shooting.rb'
 
@@ -14,6 +15,7 @@ class MainScene
   def initialize
     @dynamic_sprites = DynamicSprites.new
     @collisions = Collisions.new
+    @character_orientation = CharacterOrientation.new
     @character_movement = CharacterMovement.new(@collisions)
     @bullet_movement = BulletMovement.new(@collisions, @dynamic_sprites)
     @shooting = Shooting.new(@bullet_movement)
@@ -21,6 +23,7 @@ class MainScene
       position: [160, 90],
       movement_direction: [0, 0],
       fire_direction: [0, 0],
+      orientation: [0, -1],
       sprite: ->(player) { PlayerSprite.new(player) },
       collider: ->(player) { Collisions::RectCollider.new(player.position.x - 5, player.position.y, 10, 6) },
       weapon: SonicGun.new(cooldown: 20)
@@ -36,6 +39,7 @@ class MainScene
     )
     @dynamic_sprites.register @player
     @collisions.register @stage
+    @character_orientation.register @player
     @character_movement.register @player
     @shooting.register @player
   end
@@ -61,6 +65,7 @@ class MainScene
   end
 
   def system_ticks
+    @character_orientation.tick
     @character_movement.tick
     @bullet_movement.tick
     @shooting.tick
