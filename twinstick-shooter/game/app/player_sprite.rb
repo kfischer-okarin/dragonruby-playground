@@ -41,7 +41,7 @@ class PlayerSprite < Primitives::Sprite
   end
 
   def update_position
-    @x = @player.position.x - 3
+    @x = @player.position.x - 8
     @y = @player.position.y - 1
   end
 

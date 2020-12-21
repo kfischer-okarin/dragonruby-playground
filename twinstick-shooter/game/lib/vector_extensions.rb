@@ -10,6 +10,10 @@ module ArrayVectorExtensions
   def add_vector(other)
     [value(0) + other.x, value(1) + other.y]
   end
+
+  def mult_scalar(scalar)
+    [value(0) * scalar, value(1) * scalar]
+  end
 end
 
 Array.include ArrayVectorExtensions

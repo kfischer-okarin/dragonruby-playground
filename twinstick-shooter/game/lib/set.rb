@@ -14,6 +14,10 @@ class Set
     @values[value] = true
   end
 
+  def delete(value)
+    @values.delete(value)
+  end
+
   def include?(value)
     @values.key? value
   end

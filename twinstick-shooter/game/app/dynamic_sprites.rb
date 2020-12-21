@@ -9,6 +9,11 @@ class DynamicSprites
     @sprites_by_entity[entity] = entity.sprite
   end
 
+  def unregister(entity)
+    @entities.delete entity
+    @sprites_by_entity.delete entity
+  end
+
   def sprites
     @sprites_by_entity.values
   end
