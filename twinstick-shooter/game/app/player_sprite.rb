@@ -6,7 +6,14 @@ class PlayerSprite < Primitives::Sprite
     @frame = 0
   end
 
-  SOURCE_Y = {
+  WALK_SOURCE_Y = {
+    [0, 1] => 48,
+    [1, 0] => 64,
+    [0, -1] => 80,
+    [-1, 0] => 64
+  }.freeze
+
+  SHOOT_SOURCE_Y = {
     [0, 1] => 0,
     [1, 0] => 16,
     [0, -1] => 32,
@@ -17,7 +24,6 @@ class PlayerSprite < Primitives::Sprite
 
   def orientation=(value)
     @orientation = value
-    @source_y = SOURCE_Y[value]
     @flip_horizontally = value.x.negative?
     @frame = 0
   end
@@ -31,7 +37,7 @@ class PlayerSprite < Primitives::Sprite
   def update_orientation
     return unless orientation_changed?
 
-    self.orientation = movement_direction.y.zero? ? [movement_direction.x, 0] : [0, movement_direction.y]
+    self.orientation = direction.y.zero? ? [direction.x, 0] : [0, direction.y]
   end
 
   def update_position
@@ -40,7 +46,8 @@ class PlayerSprite < Primitives::Sprite
   end
 
   def update_animation_frame
-    if movement_direction.zero?
+    @source_y = shooting? ? SHOOT_SOURCE_Y[@orientation] : WALK_SOURCE_Y[@orientation]
+    if @player.movement_direction.zero?
       @source_x = 16
       @frame = 0
     else
@@ -49,17 +56,25 @@ class PlayerSprite < Primitives::Sprite
     end
   end
 
-  def movement_direction
-    @player.movement_direction
+  def shooting?
+    !@player.fire_direction.zero?
+  end
+
+  def direction
+    if shooting?
+      @player.fire_direction
+    else
+      @player.movement_direction
+    end
   end
 
   def orientation_changed?
-    return false if movement_direction.zero?
+    return false if direction.zero?
 
     if @orientation.x.zero?
-      movement_direction.y != @orientation.y
+      direction.y != @orientation.y
     else
-      movement_direction.x != @orientation.x
+      direction.x != @orientation.x
     end
   end
 end

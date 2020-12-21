@@ -12,6 +12,7 @@ class MainScene
     @player = Entity.new(
       position: [160, 90],
       movement_direction: [0, 0],
+      fire_direction: [0, 0],
       collider: ->(player) { Collisions::RectCollider.new(player.position.x, player.position.y, 10, 6) }
     )
     @stage = Entity.new(
@@ -30,6 +31,7 @@ class MainScene
 
   def tick(game_inputs)
     @player.movement_direction = game_inputs.direction
+    @player.fire_direction = game_inputs.fire_direction
     @character_movement.tick
     @player_sprite.tick
   end
