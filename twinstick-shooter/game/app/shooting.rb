@@ -1,8 +1,11 @@
 class Shooting
+  attr_reader :shot_this_frame
+
   def initialize(bullet_movement)
     @bullet_movement = bullet_movement
     @entities = Set.new
     @weapon_cooldowns = {}
+    @shot_this_frame = []
   end
 
   def register(entity)
@@ -11,6 +14,7 @@ class Shooting
 
   def tick
     @entities.each do |entity|
+      @shot_this_frame.clear
       reduce_cooldowns
       handle_shooting(entity)
     end
@@ -45,5 +49,6 @@ class Shooting
     bullet = entity.weapon.create_bullet(entity)
     @bullet_movement.register bullet
     @weapon_cooldowns[entity] = entity.weapon.cooldown
+    @shot_this_frame << bullet
   end
 end
