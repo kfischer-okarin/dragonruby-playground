@@ -10,6 +10,6 @@ require 'app/game.rb'
 require 'app/main_scene.rb'
 
 def tick(args)
-  $game ||= Game.new(MainScene.new)
+  $game = Game.new(MainScene.new) if args.tick_count.zero?
   $game.tick(args)
 end
