@@ -58,6 +58,7 @@ class MainScene
     return unless $args.debug.active?
     game_outputs.draw [@player.collider.x, @player.collider.y, @player.collider.w, @player.collider.h, 255, 0, 0].border
     game_outputs.draw [@player.position.x, @player.position.y, 1, 1, 0, 0, 255].solid
+    game_outputs.draw SonicGun::Synthesizer.last_generated_plot if SonicGun::Synthesizer.last_generated_plot
   end
 
   private

@@ -40,66 +40,103 @@ class SonicGun
   end
 
   class Synthesizer
-    def self.generate_sine_wave(sample_rate, frequency, length)
-      period_length = (sample_rate / frequency).ceil
-      one_period = period_length.map_with_index { |i|
-        Math.sin((2 * Math::PI) * (i / period_length))
-      }
-      one_period * (frequency * length).ceil
+    class << self
+      attr_accessor :last_generated_plot
+
+      def generate_plot(sound)
+        w = 320
+        h = 60
+        samples_per_pixel = 20
+        [].tap { |result|
+          last_point = nil
+          w.times do |x|
+            current_point = [x, sound[x * samples_per_pixel] * 300 + 30]
+            result << [last_point, current_point, 255, 0, 0].line if last_point
+            last_point = current_point
+          end
+        }
+      end
     end
 
     def initialize(sample_rate)
       @sample_rate = sample_rate
-      @result = []
+      @post_processors = []
     end
 
-    def generate
-      @result
-    end
-
-    def sine_wave(frequency, length)
-      @frequency = frequency
-      @length = length
-      @result = self.class.generate_sine_wave(@sample_rate, frequency, length)
+    def sine_wave(frequency, opts = nil)
+      options = opts || {}
+      amplitude = options[:amplitude] || 1.0
+      phase_shift = options[:phase_shift] || 0
+      sample_increment = 2 * Math::PI * frequency / @sample_rate
+      @generate_sample = proc { |index| Math.sin(index * sample_increment + phase_shift) * amplitude }
       self
     end
 
-    def add_harmonics_up_to(n)
-      (2..n).each do |harmonic|
-        sine = self.class.generate_sine_wave(@sample_rate, @frequency * harmonic, @length)
-        @result.size.times do |k|
-          @result[k] += sine[k]
-        end
-      end
+    def saw_tooth_from_harmonics(frequency, harmonics_count, opts = nil)
+      options = opts || {}
+      amplitude = options[:amplitude] || 1.0
+      phase_shift = options[:phase_shift] || 0
+
+      @generate_sample = proc { |index|
+        sample_increments = (1..harmonics_count).map { |harmonic| [harmonic, 2 * Math::PI * frequency * harmonic / @sample_rate] }.to_h
+        (1..harmonics_count).map { |harmonic|
+          Math.sin(index * sample_increments[harmonic] + phase_shift) * amplitude / harmonic
+        }.reduce(0, :plus)
+      }
+      self
+    end
+
+    def load_samples(filename)
+      samples = $gtk.read_file(filename).split.map(&:to_f)
+      @generate_sample = proc { |index| samples[index] || 0 }
       self
     end
 
     def envelope_adsr(attack, decay, sustain, release)
       full_amplitude_index = (attack * @sample_rate).ceil
-      sustain_amplitude_index = full_amplitude_index + (decay * @sample_rate).ceil
-      release_index = @result.size - (release * @sample_rate).ceil
-      @result.each_with_index do |value, index|
-        @result[index] = value * if index <= full_amplitude_index
-                                   index / full_amplitude_index
-                                 elsif index <= sustain_amplitude_index
-                                   progress = (index - full_amplitude_index) / (sustain_amplitude_index - full_amplitude_index)
-                                   1 * (1 - progress) + sustain * progress
-                                 elsif index <= release_index
-                                   sustain
-                                 else
-                                   progress = (index - release_index) / (@result.size - release_index)
-                                   sustain * (1 - progress)
-                                 end
-                                end
+      sustain_amplitude_index = ((attack + decay) * @sample_rate).ceil
+      release_samples = (release * @sample_rate).ceil
+      generator = @generate_sample
+      @generate_sample = lambda { |index, sample_count|
+        release_index = sample_count - release_samples
+
+        factor = if index <= full_amplitude_index
+                   index / full_amplitude_index
+                 elsif index <= sustain_amplitude_index
+                   progress = (index - full_amplitude_index) / (sustain_amplitude_index - full_amplitude_index)
+                   1 * (1 - progress) + sustain * progress
+                 elsif index <= release_index
+                   sustain
+                 else
+                   progress = (index - release_index) / release_samples
+                   sustain * (1 - progress)
+                 end
+
+        generator.call(index, sample_count) * factor
+      }
       self
     end
 
     def normalize(amplitude = 1.0)
-      factor = amplitude / @result.max
-      @result.size.times do |k|
-        @result[k] *= factor
-      end
+      @post_processors << lambda { |samples|
+        factor = amplitude / samples.max
+        samples.size.times do |k|
+          samples[k] *= factor
+        end
+      }
       self
+    end
+
+    def generate(length)
+      sample_count = (length * @sample_rate).ceil
+      result = sample_count.ceil.map_with_index { |index|
+        @generate_sample.call(index, sample_count)
+      }
+      @post_processors.each do |processor|
+        processor.call(result)
+      end
+      self.class.last_generated_plot = self.class.generate_plot(result)
+      result
     end
   end
 
@@ -110,11 +147,20 @@ class SonicGun
   end
 
   def self.generate_bullet_sound
+    # Synthesizer.new(48000)
+    #            .sine_wave(100, 0.25)
+    #            .add_harmonics_up_to(10)
+    #            .normalize(0.1)
+    #            .generate
     Synthesizer.new(48000)
-               .sine_wave(440, 0.25)
-               .add_harmonics_up_to(20)
-               .normalize(0.1)
+               .sine_wave(440)
                .envelope_adsr(0.05, 0.05, 0.6, 0.5)
-               .generate
+               .normalize(0.1)
+               .generate(0.25)
+    # Synthesizer.new(48000)
+    #            .load_samples('resources/track.txt')
+    #            .filter(1000)
+    #            .filter(2000)
+    #            .generate
   end
 end
