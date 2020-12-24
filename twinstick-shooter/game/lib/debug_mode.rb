@@ -5,6 +5,7 @@ module DebugExtension
       @active = false
       @debug_logs = []
       @last_debug_y = 720
+      @reset_handlers = []
     end
 
     def active?
@@ -27,6 +28,10 @@ module DebugExtension
       render_debug_logs
     end
 
+    def on_reset(&block)
+      @reset_handlers << block
+    end
+
     private
 
     DEBUG_FUNCTIONS = {
@@ -46,10 +51,16 @@ module DebugExtension
 
     def reset_with_same_seed
       $gtk.reset
+      handle_reset
     end
 
     def reset
       $gtk.reset seed: (Time.now.to_f * 1000).to_i
+      handle_reset
+    end
+
+    def handle_reset
+      @reset_handlers.each(&:call)
     end
 
     def render_debug_logs

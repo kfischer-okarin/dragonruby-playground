@@ -163,4 +163,8 @@ class SonicGun
     #            .filter(2000)
     #            .generate
   end
+
+  $args.debug.on_reset do
+    instance_variable_set('@bullet_sound', nil)
+  end
 end
