@@ -105,6 +105,22 @@ class SonicGun
       end
     end
 
+    class SawtoothGenerator < SineGenerator
+      def generate
+        @last_phase = (@last_phase + @sample_increment) % TWO_PI
+        phase = (@last_phase + @phase_shift) % TWO_PI
+        (1 - (phase / Math::PI)) * @amplitude
+      end
+    end
+
+    class SquareGenerator < SineGenerator
+      def generate
+        @last_phase = (@last_phase + @sample_increment) % TWO_PI
+        phase = (@last_phase + @phase_shift) % TWO_PI
+        (phase > Math::PI ? -1 : 1) * @amplitude
+      end
+    end
+
     class << self
       attr_accessor :last_generated_plot
 
@@ -135,7 +151,19 @@ class SonicGun
       self
     end
 
-    def saw_tooth_from_harmonics(frequency, harmonics_count, opts = nil)
+    def sawtooth_wave(frequency, opts = nil)
+      @generator = SawtoothGenerator.new(@sample_rate, frequency, opts)
+      @generate_sample = proc { |index| @generator.generate }
+      self
+    end
+
+    def square_wave(frequency, opts = nil)
+      @generator = SquareGenerator.new(@sample_rate, frequency, opts)
+      @generate_sample = proc { |index| @generator.generate }
+      self
+    end
+
+    def sawtooth_from_harmonics(frequency, harmonics_count, opts = nil)
       @generator = SawToothFromHarmonicsGenerator.new(@sample_rate, frequency, harmonics_count, opts)
       @generate_sample = proc { |index| @generator.generate }
       self
