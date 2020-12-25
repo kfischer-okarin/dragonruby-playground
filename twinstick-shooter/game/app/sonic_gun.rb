@@ -92,6 +92,15 @@ class SonicGun
       self
     end
 
+    # TODO: Generalize volume envelope application
+    # TODO: Generalize To Attack, Release definitions: SlopePhase(Time, Level)
+    #   - ADSR(attack, decay, sustain, release)
+    #       = Attack: [SlopePhase(attack, 1), SlopePhase(decay, sustain)],
+    #         Release: [SlopePhase(release, 0)]
+    # TODO: 5 Stage Attack Decay Slope Sustain Release
+    #   - ADSSR(attack, attack_level, decay, break_point, slope, sustain_level, release)
+    #       = Attack: [SlopePhase(attack, attack_level), SlopePhase(decay, break_point), SlopePhase(slope, sustain_level)],
+    #         Release: [SlopePhase(release, 0)]
     def envelope_adsr(attack, decay, sustain, release)
       full_amplitude_index = (attack * @sample_rate).ceil
       sustain_amplitude_index = ((attack + decay) * @sample_rate).ceil
