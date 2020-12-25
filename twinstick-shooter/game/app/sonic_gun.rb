@@ -40,6 +40,71 @@ class SonicGun
   end
 
   class Synthesizer
+    class SineGenerator
+      TWO_PI = 2 * Math::PI
+
+      attr_reader :frequency
+      attr_accessor :amplitude, :phase_shift
+
+      def initialize(sample_rate, frequency, opts = nil)
+        @sample_rate = sample_rate
+        self.frequency = frequency
+        options = opts || {}
+        @amplitude = options[:amplitude] || 1.0
+        @phase_shift = options[:phase_shift] || 0
+        @last_phase = -@sample_increment # Before first sampke
+      end
+
+      def frequency=(value)
+        @frequency = value
+        @sample_increment = TWO_PI * value / @sample_rate
+      end
+
+      def generate
+        @last_phase = (@last_phase + @sample_increment) % TWO_PI
+        Math.sin(@last_phase + @phase_shift) * @amplitude
+      end
+    end
+
+    class SawToothFromHarmonicsGenerator
+      attr_reader :frequency, :amplitude, :phase_shift
+
+      def initialize(sample_rate, frequency, harmonics_count, opts = nil)
+        @frequency = frequency
+        options = opts || {}
+        @amplitude = options[:amplitude] || 1.0
+        @phase_shift = options[:phase_shift] || 0
+        @generators = (1..harmonics_count).map { |harmonic|
+          SineGenerator.new(sample_rate, @frequency * harmonic, phase_shift: @phase_shift, amplitude: @amplitude / harmonic)
+        }
+      end
+
+      def frequency=(value)
+        @frequency = value
+        (1..@generators.size).each do |harmonic|
+          @generators[harmonic - 1].frequency = value * harmonic
+        end
+      end
+
+      def amplitude=(value)
+        @amplitude = value
+        (1..@generators.size).each do |harmonic|
+          @generators[harmonic - 1].amplitude = value / harmonic
+        end
+      end
+
+      def phase_shift=(value)
+        @phase_shift = value
+        @generators.each do |generator|
+          generator.phase_shift = value
+        end
+      end
+
+      def generate
+        @generators.reduce(0) { |memo, generator| memo + generator.generate }
+      end
+    end
+
     class << self
       attr_accessor :last_generated_plot
 
@@ -59,30 +124,20 @@ class SonicGun
     end
 
     def initialize(sample_rate)
+      @generator = nil
       @sample_rate = sample_rate
       @post_processors = []
     end
 
     def sine_wave(frequency, opts = nil)
-      options = opts || {}
-      amplitude = options[:amplitude] || 1.0
-      phase_shift = options[:phase_shift] || 0
-      sample_increment = 2 * Math::PI * frequency / @sample_rate
-      @generate_sample = proc { |index| Math.sin(index * sample_increment + phase_shift) * amplitude }
+      @generator = SineGenerator.new(@sample_rate, frequency, opts)
+      @generate_sample = proc { |index| @generator.generate }
       self
     end
 
     def saw_tooth_from_harmonics(frequency, harmonics_count, opts = nil)
-      options = opts || {}
-      amplitude = options[:amplitude] || 1.0
-      phase_shift = options[:phase_shift] || 0
-
-      @generate_sample = proc { |index|
-        sample_increments = (1..harmonics_count).map { |harmonic| [harmonic, 2 * Math::PI * frequency * harmonic / @sample_rate] }.to_h
-        (1..harmonics_count).map { |harmonic|
-          Math.sin(index * sample_increments[harmonic] + phase_shift) * amplitude / harmonic
-        }.reduce(0, :plus)
-      }
+      @generator = SawToothFromHarmonicsGenerator.new(@sample_rate, frequency, harmonics_count, opts)
+      @generate_sample = proc { |index| @generator.generate }
       self
     end
 
