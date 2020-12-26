@@ -200,6 +200,17 @@ class SonicGun
       end
     end
 
+    class Tremolo
+      def initialize(sample_rate, original_amplitude, effect_frequency, effect_amplitude)
+        @original_amplitude = original_amplitude
+        @wave_generator = SineGenerator.new(sample_rate, effect_frequency, amplitude: effect_amplitude)
+      end
+
+      def apply_to(generator)
+        generator.amplitude = @original_amplitude * (1 + @wave_generator.generate)
+      end
+    end
+
     class << self
       attr_accessor :last_generated_plot
 
@@ -267,6 +278,11 @@ class SonicGun
       self
     end
 
+    def tremolo(frequency, amount)
+      @modulators << Tremolo.new(@sample_rate, @generator.amplitude, frequency, amount)
+      self
+    end
+
     def normalize(amplitude = 1.0)
       @post_processors << lambda { |samples|
         factor = amplitude / samples.max
@@ -313,7 +329,8 @@ class SonicGun
     #            .generate
     Synthesizer.new(48000)
                .sine_wave(440)
-               .vibrato(2, 0.2)
+               .tremolo(5, 0.8)
+               .vibrato(11, 0.1)
                .normalize(0.1)
                .generate(1)
     # Synthesizer.new(48000)
