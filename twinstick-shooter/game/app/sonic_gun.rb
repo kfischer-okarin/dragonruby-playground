@@ -121,17 +121,86 @@ class SonicGun
       end
     end
 
+    class EnvelopeGenerator
+      Slope = Struct.new(:duration, :level)
+
+      def self.adsr(sample_rate, attack, decay, sustain, release)
+        new(sample_rate, [Slope.new(attack, 1), Slope.new(decay, sustain)], [Slope.new(release, 0)])
+      end
+
+      def initialize(sample_rate, attack_phases, release_phases)
+        @sample_rate = sample_rate
+        @phases = {
+          attack: attack_phases,
+          release: release_phases
+        }
+        @last_value = 0
+        switch_to_phase(:attack, 0)
+      end
+
+      def attack
+        switch_to_phase(:attack, 0)
+      end
+
+      def release
+        switch_to_phase(:release, 0)
+      end
+
+      def release_duration
+        @phases[:release].reduce(0) { |memo, phase| memo + phase.duration }
+      end
+
+      def generate
+        return @last_value if @mode == :sustain
+
+        value = @last_value + @increment
+        @sample_index += 1
+        if phase_finished?
+          value = @phase.level
+          go_to_next_phase
+        end
+
+        @last_value = value
+      end
+
+      private
+
+      def phase_finished?
+        @sample_index >= @phase_sample_count
+      end
+
+      def switch_to_phase(mode, index)
+        @mode = mode
+        @phase_index = index
+        @phase = @phases[@mode][@phase_index]
+        @sample_index = 0
+        @phase_sample_count = (@phase.duration * @sample_rate).ceil
+        @increment = (@phase.level - @last_value) / @phase_sample_count
+      end
+
+      def go_to_next_phase
+        next_phase_index = @phase_index + 1
+        mode_finished = @phases[@mode][next_phase_index].nil?
+        if mode_finished
+          @mode = :sustain
+        else
+          switch_to_phase(@mode, next_phase_index)
+        end
+      end
+    end
+
     class << self
       attr_accessor :last_generated_plot
 
       def generate_plot(sound)
         w = 320
         h = 60
+        offset = 5400
         samples_per_pixel = 20
         [].tap { |result|
           last_point = nil
           w.times do |x|
-            current_point = [x, sound[x * samples_per_pixel] * 300 + 30]
+            current_point = [x, sound[offset + x * samples_per_pixel] * 300 + 30]
             result << [last_point, current_point, 255, 0, 0].line if last_point
             last_point = current_point
           end
@@ -142,6 +211,7 @@ class SonicGun
     def initialize(sample_rate)
       @generator = nil
       @sample_rate = sample_rate
+      @envelope = nil
       @post_processors = []
     end
 
@@ -175,37 +245,12 @@ class SonicGun
       self
     end
 
-    # TODO: Generalize volume envelope application
-    # TODO: Generalize To Attack, Release definitions: SlopePhase(Time, Level)
-    #   - ADSR(attack, decay, sustain, release)
-    #       = Attack: [SlopePhase(attack, 1), SlopePhase(decay, sustain)],
-    #         Release: [SlopePhase(release, 0)]
     # TODO: 5 Stage Attack Decay Slope Sustain Release
     #   - ADSSR(attack, attack_level, decay, break_point, slope, sustain_level, release)
     #       = Attack: [SlopePhase(attack, attack_level), SlopePhase(decay, break_point), SlopePhase(slope, sustain_level)],
     #         Release: [SlopePhase(release, 0)]
     def envelope_adsr(attack, decay, sustain, release)
-      full_amplitude_index = (attack * @sample_rate).ceil
-      sustain_amplitude_index = ((attack + decay) * @sample_rate).ceil
-      release_samples = (release * @sample_rate).ceil
-      generator = @generate_sample
-      @generate_sample = lambda { |index, sample_count|
-        release_index = sample_count - release_samples
-
-        factor = if index <= full_amplitude_index
-                   index / full_amplitude_index
-                 elsif index <= sustain_amplitude_index
-                   progress = (index - full_amplitude_index) / (sustain_amplitude_index - full_amplitude_index)
-                   1 * (1 - progress) + sustain * progress
-                 elsif index <= release_index
-                   sustain
-                 else
-                   progress = (index - release_index) / release_samples
-                   sustain * (1 - progress)
-                 end
-
-        generator.call(index, sample_count) * factor
-      }
+      @envelope = EnvelopeGenerator.adsr(@sample_rate, attack, decay, sustain, release)
       self
     end
 
@@ -221,8 +266,14 @@ class SonicGun
 
     def generate(length)
       sample_count = (length * @sample_rate).ceil
+      release_index = sample_count - (@envelope.release_duration * @sample_rate).ceil if @envelope
       result = sample_count.ceil.map_with_index { |index|
-        @generate_sample.call(index, sample_count)
+        value = @generate_sample.call(index, sample_count)
+        if @envelope
+          value *= @envelope.generate
+          @envelope.release if index == release_index
+        end
+        value
       }
       @post_processors.each do |processor|
         processor.call(result)
@@ -246,7 +297,7 @@ class SonicGun
     #            .generate
     Synthesizer.new(48000)
                .sine_wave(440)
-               .envelope_adsr(0.05, 0.05, 0.6, 0.5)
+               .envelope_adsr(0.05, 0.05, 0.6, 0.05)
                .normalize(0.1)
                .generate(0.25)
     # Synthesizer.new(48000)
