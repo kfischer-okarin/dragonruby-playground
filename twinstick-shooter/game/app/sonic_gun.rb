@@ -189,6 +189,17 @@ class SonicGun
       end
     end
 
+    class Vibrato
+      def initialize(sample_rate, original_frequency, effect_frequency, effect_amplitude)
+        @original_frequency = original_frequency
+        @wave_generator = SineGenerator.new(sample_rate, effect_frequency, amplitude: effect_amplitude)
+      end
+
+      def apply_to(generator)
+        generator.frequency = @original_frequency * (1 + @wave_generator.generate)
+      end
+    end
+
     class << self
       attr_accessor :last_generated_plot
 
@@ -210,6 +221,7 @@ class SonicGun
 
     def initialize(sample_rate)
       @generator = nil
+      @modulators = []
       @sample_rate = sample_rate
       @envelope = nil
       @post_processors = []
@@ -217,31 +229,27 @@ class SonicGun
 
     def sine_wave(frequency, opts = nil)
       @generator = SineGenerator.new(@sample_rate, frequency, opts)
-      @generate_sample = proc { |index| @generator.generate }
       self
     end
 
     def sawtooth_wave(frequency, opts = nil)
       @generator = SawtoothGenerator.new(@sample_rate, frequency, opts)
-      @generate_sample = proc { |index| @generator.generate }
       self
     end
 
     def square_wave(frequency, opts = nil)
       @generator = SquareGenerator.new(@sample_rate, frequency, opts)
-      @generate_sample = proc { |index| @generator.generate }
       self
     end
 
     def sawtooth_from_harmonics(frequency, harmonics_count, opts = nil)
       @generator = SawToothFromHarmonicsGenerator.new(@sample_rate, frequency, harmonics_count, opts)
-      @generate_sample = proc { |index| @generator.generate }
       self
     end
 
     def load_samples(filename)
       samples = $gtk.read_file(filename).split.map(&:to_f)
-      @generate_sample = proc { |index| samples[index] || 0 }
+      @generate_sample = proc { |index| samples[index] || 0 } # TODO: FIX
       self
     end
 
@@ -251,6 +259,11 @@ class SonicGun
     #         Release: [SlopePhase(release, 0)]
     def envelope_adsr(attack, decay, sustain, release)
       @envelope = EnvelopeGenerator.adsr(@sample_rate, attack, decay, sustain, release)
+      self
+    end
+
+    def vibrato(frequency, amount)
+      @modulators << Vibrato.new(@sample_rate, @generator.frequency, frequency, amount)
       self
     end
 
@@ -268,7 +281,10 @@ class SonicGun
       sample_count = (length * @sample_rate).ceil
       release_index = sample_count - (@envelope.release_duration * @sample_rate).ceil if @envelope
       result = sample_count.ceil.map_with_index { |index|
-        value = @generate_sample.call(index, sample_count)
+        @modulators.each do |modulator|
+          modulator.apply_to(@generator)
+        end
+        value = @generator.generate
         if @envelope
           value *= @envelope.generate
           @envelope.release if index == release_index
@@ -297,9 +313,9 @@ class SonicGun
     #            .generate
     Synthesizer.new(48000)
                .sine_wave(440)
-               .envelope_adsr(0.05, 0.05, 0.6, 0.05)
+               .vibrato(2, 0.2)
                .normalize(0.1)
-               .generate(0.25)
+               .generate(1)
     # Synthesizer.new(48000)
     #            .load_samples('resources/track.txt')
     #            .filter(1000)
