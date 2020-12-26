@@ -58,6 +58,9 @@ class SonicGun
                .vibrato(5, 0.8)
                .normalize(0.1)
                .generate(1)
+               .tap { |sound|
+      $last_sound_plot = Util::WaveformPlotter.new(w: 320, h: 60, samples_per_pixel: 20, max_amplitude: 0.2).plot(sound)
+    }
     # Synthesizer.new(48000)
     #            .load_samples('resources/track.txt')
     #            .filter(1000)
