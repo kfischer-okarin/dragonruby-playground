@@ -1,33 +1,21 @@
 require 'lib/synthesizer/generators.rb'
+require 'lib/synthesizer/util.rb'
 
 module Modulators
-  class Vibrato
-    def initialize(sample_rate, original_frequency, effect_frequency, effect_amplitude)
-      @original_frequency = original_frequency
+  class General
+    def initialize(args)
+      Util::Params[args].require!(:sample_rate, :attribute, :base_value, :frequency, :amount)
+      @attribute = args[:attribute]
+      @base_value = args[:base_value]
       @wave_generator = Generators::Sine.new(
-        sample_rate: sample_rate,
-        frequency: effect_frequency,
-        amplitude: effect_amplitude
+        sample_rate: args[:sample_rate],
+        frequency: args[:frequency],
+        amplitude: args[:amount]
       )
     end
 
     def apply_to(generator)
-      generator.frequency = @original_frequency * (1 + @wave_generator.generate)
-    end
-  end
-
-  class Tremolo
-    def initialize(sample_rate, original_amplitude, effect_frequency, effect_amplitude)
-      @original_amplitude = original_amplitude
-      @wave_generator = Generators::Sine.new(
-        sample_rate: sample_rate,
-        frequency: effect_frequency,
-        amplitude: effect_amplitude
-      )
-    end
-
-    def apply_to(generator)
-      generator.amplitude = @original_amplitude * (1 + @wave_generator.generate)
+      generator.send(:"#{@attribute}=", @base_value * (1 + @wave_generator.generate))
     end
   end
 end

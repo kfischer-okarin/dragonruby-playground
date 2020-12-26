@@ -41,6 +41,8 @@ module Generators
   end
 
   class Square < Sine
+    attr_reader :pulse_width
+
     def initialize(args)
       self.pulse_width = args.delete(:pulse_width) || 0.5
       super(args)

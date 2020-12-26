@@ -50,12 +50,35 @@ class Synthesizer
   end
 
   def vibrato(frequency, amount)
-    @modulators << Modulators::Vibrato.new(@sample_rate, @generator.frequency, frequency, amount)
+    @modulators << Modulators::General.new(
+      sample_rate: @sample_rate,
+      attribute: :frequency,
+      base_value: @generator.frequency,
+      frequency: frequency,
+      amount: amount
+    )
     self
   end
 
   def tremolo(frequency, amount)
-    @modulators << Modulators::Tremolo.new(@sample_rate, @generator.amplitude, frequency, amount)
+    @modulators << Modulators::General.new(
+      sample_rate: @sample_rate,
+      attribute: :amplitude,
+      base_value: @generator.amplitude,
+      frequency: frequency,
+      amount: amount
+    )
+    self
+  end
+
+  def modulate_pulse_width(frequency, amount)
+    @modulators << Modulators::General.new(
+      sample_rate: @sample_rate,
+      attribute: :pulse_width,
+      base_value: @generator.pulse_width,
+      frequency: frequency,
+      amount: amount
+    )
     self
   end
 
