@@ -87,8 +87,8 @@ class Synthesizer
     @modulators.each do |modulator|
       modulator.apply_to(@generator)
     end
-    value = @generator.generate
-    value *= @envelope.generate if @envelope
+    value = @generator.next
+    value *= @envelope.next if @envelope
     value
   end
 

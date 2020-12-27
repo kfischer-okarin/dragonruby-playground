@@ -23,7 +23,7 @@ module Generators
       @sample_increment = TWO_PI * value / @sample_rate
     end
 
-    def generate
+    def next
       phase = (@next_phase + @phase_shift) % TWO_PI
       @next_phase = (@next_phase + @sample_increment) % TWO_PI
       value_of_phase(phase) * @amplitude
@@ -92,8 +92,8 @@ module Generators
       end
     end
 
-    def generate
-      @generators.reduce(0) { |memo, generator| memo + generator.generate }
+    def next
+      @generators.reduce(0) { |memo, generator| memo + generator.next }
     end
   end
 end

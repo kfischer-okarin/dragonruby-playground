@@ -27,7 +27,7 @@ class EnvelopeGenerator
     @phases[:release].reduce(0) { |memo, phase| memo + phase.duration }
   end
 
-  def generate
+  def next
     return @last_value if @mode == :sustain
 
     value = @last_value + @increment

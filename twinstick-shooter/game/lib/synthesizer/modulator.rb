@@ -17,7 +17,7 @@ class Modulator
   end
 
   def apply_to(generator)
-    generator.send(:"#{@attribute}=", @base_value * (1 + @wave_generator.generate))
+    generator.send(:"#{@attribute}=", @base_value * (1 + @wave_generator.next))
   end
 
   private
