@@ -40,5 +40,19 @@ def test_modulate_pulse_width(_args, assert)
   assert.equal! pulse_widths, [0.5, 0.55, 0.5, 0.45]
 end
 
+def test_modulate(_args, assert)
+  synthesizer = Synthesizer.new(4)
+                           .square_wave(100)
+                           .modulate(:frequency, type: :square, frequency: 1, amplitude: 0.1)
+
+  frequencies = []
+  4.times do
+    synthesizer.next
+    frequencies << synthesizer.generator.frequency.to_i
+  end
+
+  assert.equal! frequencies, [110, 110, 90, 90]
+end
+
 $gtk.reset 100
 $gtk.log_level = :off

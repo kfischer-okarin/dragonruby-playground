@@ -1,6 +1,6 @@
 require 'lib/synthesizer/envelope_generator.rb'
 require 'lib/synthesizer/generators.rb'
-require 'lib/synthesizer/modulators.rb'
+require 'lib/synthesizer/modulator.rb'
 
 class Synthesizer
   attr_reader :generator
@@ -51,37 +51,26 @@ class Synthesizer
     self
   end
 
-  def vibrato(frequency, amount)
-    @modulators << Modulators::General.new(
+  def modulate(attribute, generator_params)
+    @modulators << Modulator.new(
       sample_rate: @sample_rate,
-      attribute: :frequency,
-      base_value: @generator.frequency,
-      frequency: frequency,
-      amount: amount
+      attribute: attribute,
+      base_value: @generator.send(attribute),
+      generator: generator_params
     )
     self
+  end
+
+  def vibrato(frequency, amount)
+    modulate(:frequency, frequency: frequency, amplitude: amount)
   end
 
   def tremolo(frequency, amount)
-    @modulators << Modulators::General.new(
-      sample_rate: @sample_rate,
-      attribute: :amplitude,
-      base_value: @generator.amplitude,
-      frequency: frequency,
-      amount: amount
-    )
-    self
+    modulate(:amplitude, frequency: frequency, amplitude: amount)
   end
 
   def modulate_pulse_width(frequency, amount)
-    @modulators << Modulators::General.new(
-      sample_rate: @sample_rate,
-      attribute: :pulse_width,
-      base_value: @generator.pulse_width,
-      frequency: frequency,
-      amount: amount
-    )
-    self
+    modulate(:pulse_width, frequency: frequency, amplitude: amount)
   end
 
   def normalize(amplitude = 1.0)
