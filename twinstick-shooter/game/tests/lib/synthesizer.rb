@@ -1,43 +1,43 @@
-def test_sawtooth_wave(_args, assert)
-  generator = Generators::Sawtooth.new(sample_rate: 6, frequency: 2)
-  samples = 6.map_with_index { generator.generate }
+def test_vibrato(_args, assert)
+  synthesizer = Synthesizer.new(4)
+                           .sine_wave(100)
+                           .vibrato(1, 0.1)
 
-  assert.equal! samples, [1, 1 - (2 / 3), 1 - (4 / 3), 1, 1 - (2 / 3), 1 - (4 / 3)]
+  frequencies = []
+  4.times do
+    synthesizer.next
+    frequencies << synthesizer.generator.frequency.to_i
+  end
+
+  assert.equal! frequencies, [100, 110, 100, 90]
 end
 
-def test_sawtooth_wave_amplitude(_args, assert)
-  generator = Generators::Sawtooth.new(sample_rate: 6, frequency: 2, amplitude: 2)
-  samples = 6.map_with_index { generator.generate }
+def test_tremolo(_args, assert)
+  synthesizer = Synthesizer.new(4)
+                           .sine_wave(100)
+                           .tremolo(1, 0.1)
 
-  assert.equal! samples, [2, 2 - (4 / 3), 2 - (8 / 3), 2, 2 - (4 / 3), 2 - (8 / 3)]
+  amplitudes = []
+  4.times do
+    synthesizer.next
+    amplitudes << synthesizer.generator.amplitude
+  end
+
+  assert.equal! amplitudes, [1, 1.1, 1, 0.9]
 end
 
-def test_square_wave(_args, assert)
-  generator = Generators::Square.new(sample_rate: 4, frequency: 2)
-  samples = 4.map_with_index { generator.generate }
+def test_modulate_pulse_width(_args, assert)
+  synthesizer = Synthesizer.new(4)
+                           .square_wave(100)
+                           .modulate_pulse_width(1, 0.1)
 
-  assert.equal! samples, [1, -1, 1, -1]
-end
+  pulse_widths = []
+  4.times do
+    synthesizer.next
+    pulse_widths << synthesizer.generator.pulse_width
+  end
 
-def test_square_wave_amplitude(_args, assert)
-  generator = Generators::Square.new(sample_rate: 4, frequency: 2, amplitude: 3)
-  samples = 4.map_with_index { generator.generate }
-
-  assert.equal! samples, [3, -3, 3, -3]
-end
-
-def test_square_wave_phase_shift(_args, assert)
-  generator = Generators::Square.new(sample_rate: 8, frequency: 2, phase_shift: Math::PI / 2)
-  samples = 8.map_with_index { generator.generate }
-
-  assert.equal! samples, [1, -1, -1, 1, 1, -1, -1, 1]
-end
-
-def test_square_wave_pulse_width(_args, assert)
-  generator = Generators::Square.new(sample_rate: 8, frequency: 2, pulse_width: 0.25)
-  samples = 8.map_with_index { generator.generate }
-
-  assert.equal! samples, [1, -1, -1, -1, 1, -1, -1, -1]
+  assert.equal! pulse_widths, [0.5, 0.55, 0.5, 0.45]
 end
 
 $gtk.reset 100

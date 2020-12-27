@@ -3,6 +3,8 @@ require 'lib/synthesizer/generators.rb'
 require 'lib/synthesizer/modulators.rb'
 
 class Synthesizer
+  attr_reader :generator
+
   def initialize(sample_rate)
     @generator = nil
     @modulators = []
@@ -92,18 +94,21 @@ class Synthesizer
     self
   end
 
+  def next
+    @modulators.each do |modulator|
+      modulator.apply_to(@generator)
+    end
+    value = @generator.generate
+    value *= @envelope.generate if @envelope
+    value
+  end
+
   def generate(length)
     sample_count = (length * @sample_rate).ceil
     release_index = sample_count - (@envelope.release_duration * @sample_rate).ceil if @envelope
     result = sample_count.ceil.map_with_index { |index|
-      @modulators.each do |modulator|
-        modulator.apply_to(@generator)
-      end
-      value = @generator.generate
-      if @envelope
-        value *= @envelope.generate
-        @envelope.release if index == release_index
-      end
+      value = self.next
+      @envelope.release if @envelope && index == release_index
       value
     }
     @post_processors.each do |processor|
