@@ -19,10 +19,11 @@ class SonicGun
     end
   end
 
-  attr_reader :cooldown
+  attr_reader :cooldown, :frequency
 
   def initialize(values)
     @cooldown = values[:cooldown]
+    @frequency = values[:frequency]
   end
 
   OFFSET = {
@@ -37,36 +38,37 @@ class SonicGun
       position: entity.position.add_vector(OFFSET[entity.orientation]),
       movement_direction: entity.orientation.dup,
       sprite: ->(bullet) { Sprite.new(bullet) },
-      sound: self.class.bullet_sound
+      sound: self.class.bullet_sound_for(@frequency)
     )
+  end
+
+  def frequency=(value)
+    @frequency = value.clamp(min_frequency, max_frequency)
+  end
+
+  def max_frequency
+    1000
+  end
+
+  def min_frequency
+    100
   end
 
   SAMPLE_RATE = 48_000
 
-  def self.bullet_sound
-    @bullet_sound ||= generate_bullet_sound
+  def self.bullet_sound_for(frequency)
+    @bullet_sound_for ||= {}
+    @bullet_sound_for[frequency] ||= generate_bullet_sound(frequency)
   end
 
-  def self.generate_bullet_sound
-    # Synthesizer.new(48000)
-    #            .sine_wave(100, 0.25)
-    #            .add_harmonics_up_to(10)
-    #            .normalize(0.1)
-    #            .generate
+  def self.generate_bullet_sound(base_frequency)
+    length = 1 * (100 / base_frequency)**(1 / 3)
     Synthesizer.new(SAMPLE_RATE)
-               .square_wave(440)
-               .modulate_pulse_width(5, 0.8)
-               .vibrato(3, 0.8)
-               .normalize(0.1)
-               .generate(1)
-               .tap { |sound|
-      $last_sound_plot = Util::WaveformPlotter.new(w: 320, h: 60, samples_per_pixel: 30, max_amplitude: 0.2).plot(sound)
-    }
-    # Synthesizer.new(48000)
-    #            .load_samples('resources/track.txt')
-    #            .filter(1000)
-    #            .filter(2000)
-    #            .generate
+               .sine_wave(base_frequency)
+               .modulate(:frequency, { frequency: 0.5 / length, amplitude: 1, phase_shift: Math::PI * 0.5 })
+               .envelope_adsr(length * 0.1, length * 0.2, 0.8, length * 0.1)
+               .normalize(0.05)
+               .generate(length)
   end
 
   $args.debug.on_reset do

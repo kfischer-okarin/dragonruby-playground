@@ -3,6 +3,7 @@ require 'app/bullet_movement.rb'
 require 'app/character_movement.rb'
 require 'app/character_orientation.rb'
 require 'app/dynamic_sprites.rb'
+require 'app/frequency_meter.rb'
 require 'app/shooting.rb'
 
 require 'app/entity.rb'
@@ -26,8 +27,9 @@ class MainScene
       orientation: [0, -1],
       sprite: ->(player) { PlayerSprite.new(player) },
       collider: ->(player) { Collisions::RectCollider.new(player.position.x - 5, player.position.y, 10, 6) },
-      weapon: SonicGun.new(cooldown: 20)
+      weapon: SonicGun.new(cooldown: 20, frequency: 550)
     )
+    @frequency_meter = FrequencyMeter.new(x: 256, y: 164, sonic_gun: @player.weapon)
     @stage = Entity.new(
       collider: Collisions::CompositeCollider.new([
         Collisions::RectCollider.new(0, 0, 320, 20),
@@ -66,6 +68,10 @@ class MainScene
   def process_inputs(game_inputs)
     @player.movement_direction = game_inputs.direction
     @player.fire_direction = game_inputs.fire_direction
+    return if game_inputs.change_frequency.zero?
+
+    @player.weapon.frequency += game_inputs.change_frequency * 10
+    @frequency_meter.refresh
   end
 
   def system_ticks
