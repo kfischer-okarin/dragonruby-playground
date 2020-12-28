@@ -4,11 +4,11 @@ class Game
   # Interface for input
   class Inputs
     def self.direction
-      @direction ||= DirectionalInput.new(:w, :a, :s, :d)
+      @direction ||= KeyboardDirectionalInput.new(:w, :a, :s, :d)
     end
 
     def self.fire_direction
-      @fire_direction ||= DirectionalInput.new(:up, :left, :down, :right)
+      @fire_direction ||= KeyboardDirectionalInput.new(:up, :left, :down, :right)
     end
 
     def initialize(args)
