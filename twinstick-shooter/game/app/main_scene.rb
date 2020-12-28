@@ -51,14 +51,14 @@ class MainScene
 
   def render(game_outputs)
     game_outputs.draw background
-    game_outputs.draw @dynamic_sprites.sprites.sort_by { |sprite| -sprite.y } # TODO: BubbleSorted list?
+    game_outputs.draw @frequency_meter
+    game_outputs.draw(@dynamic_sprites.sprites.sort_by { |sprite| -sprite.y }) # TODO: BubbleSorted list?
     @shooting.shot_this_frame.each do |bullet|
       game_outputs.play_sample bullet.sound
     end
     return unless $args.debug.active?
-    game_outputs.draw [@player.collider.x, @player.collider.y, @player.collider.w, @player.collider.h, 255, 0, 0].border
-    game_outputs.draw [@player.position.x, @player.position.y, 1, 1, 0, 0, 255].solid
-    game_outputs.draw $last_sound_plot if $last_sound_plot
+
+    draw_debug_info(game_outputs)
   end
 
   private
@@ -78,5 +78,11 @@ class MainScene
 
   def background
     @background ||= Primitives::Sprite.new(Resources.sprites.background, r: 97, g: 162, b: 255)
+  end
+
+  def draw_debug_info(game_outputs)
+    game_outputs.draw [@player.collider.x, @player.collider.y, @player.collider.w, @player.collider.h, 255, 0, 0].border
+    game_outputs.draw [@player.position.x, @player.position.y, 1, 1, 0, 0, 255].solid
+    game_outputs.draw $last_sound_plot if $last_sound_plot
   end
 end
