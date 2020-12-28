@@ -4,8 +4,8 @@ module Generators
   class Sine
     TWO_PI = 2 * Math::PI
 
-    attr_reader :frequency
-    attr_accessor :amplitude, :phase_shift
+    attr_reader :frequency, :phase_shift, :next_phase
+    attr_accessor :amplitude
 
     def initialize(args)
       Util::Params[args].require!(:sample_rate, :frequency).permit!(:amplitude, :phase_shift)
@@ -14,8 +14,7 @@ module Generators
       self.frequency = args[:frequency]
       @amplitude = args[:amplitude] || 1.0
       @phase_shift = args[:phase_shift] || 0
-      @last_phase = 0
-      @next_phase = 0
+      self.next_phase = @phase_shift
     end
 
     def frequency=(value)
@@ -23,9 +22,18 @@ module Generators
       @sample_increment = TWO_PI * value / @sample_rate
     end
 
+    def phase_shift=(value)
+      self.next_phase += (value - @phase_shift)
+      @phase_shift = value
+    end
+
+    def next_phase=(value)
+      @next_phase = value % TWO_PI
+    end
+
     def next
-      phase = (@next_phase + @phase_shift) % TWO_PI
-      @next_phase = (@next_phase + @sample_increment) % TWO_PI
+      phase = @next_phase
+      self.next_phase += @sample_increment
       value_of_phase(phase) * @amplitude
     end
 
