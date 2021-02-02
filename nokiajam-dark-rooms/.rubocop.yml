@@ -1,0 +1,18 @@
+AllCops:
+  NewCops: enable
+
+Layout/LineLength:
+  Max: 120
+
+Style/FrozenStringLiteralComment:
+  Enabled: false
+
+Style/GlobalVars:
+  Enabled: false
+
+Style/RedundantFileExtensionInRequire:
+  Exclude:
+    - game/**/*
+
+Style/BlockDelimiters:
+  EnforcedStyle: semantic
