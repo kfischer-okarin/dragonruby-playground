@@ -4,6 +4,14 @@ require 'lib/resources.rb'
 
 require 'app/resources.rb'
 
+require 'app/game/outputs.rb'
+
+def setup(_args)
+  $outputs = Game::Outputs.new
+end
+
 def tick(args)
-  # Game
+  setup(args) if args.tick_count.zero?
+
+  $outputs.process(args)
 end
