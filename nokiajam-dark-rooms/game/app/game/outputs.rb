@@ -27,8 +27,8 @@ class Game
       @created_sprites << { id: id, pixels: pixels }
     end
 
-    def render_sprite(x, y, id)
-      @canvas.primitives << { x: x, y: y, path: id }.merge(@sprites[id]).sprite
+    def render_sprite(x, y, id, options = nil)
+      @canvas.primitives << { x: x, y: y, path: id, **@sprites[id], **(options || {}) }.sprite
     end
 
     def process(args)
