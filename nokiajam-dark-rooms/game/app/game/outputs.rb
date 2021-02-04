@@ -4,7 +4,11 @@ class Game
   # Specialized Outputs for Nokia Jam
   class Outputs
     def self.color_as_int(color)
-      color[2] + color[1] * 0x100 + color[0] * 0x10000 + 0xFF000000
+      color[:b] + color[:g] * 0x100 + color[:r] * 0x10000 + 0xFF000000
+    end
+
+    def self.color_as_array(color)
+      [color[:r], color[:g], color[:b]]
     end
 
     def w
@@ -15,8 +19,11 @@ class Game
       48
     end
 
-    BLACK = [67, 82, 61].freeze
-    WHITE = [199, 240, 216].freeze
+    BLACK = { r: 67, g: 82, b: 61 }.freeze
+    WHITE = { r: 199, g: 240, b: 216 }.freeze
+
+    BLACK_ARRAY = color_as_array(BLACK)
+    WHITE_ARRAY = color_as_array(WHITE)
 
     BLACK_INT = color_as_int(BLACK)
     WHITE_INT = color_as_int(WHITE)
@@ -40,13 +47,15 @@ class Game
     end
 
     def render_sprite(x, y, id, options = nil)
-      @canvas.primitives << { x: x, y: y, path: id, **@sprites[id], **(options || {}) }.sprite
+      color = WHITE
+      primitive = { x: x, y: y, path: id, **@sprites[id], **color, **(options || {}) }.sprite
+      @canvas.primitives << primitive
     end
 
     def process(args)
       initialize_sprites(args) unless @created_sprites.empty?
-      args.outputs.background_color = BLACK
-      @canvas.background_color = BLACK
+      args.outputs.background_color = BLACK_ARRAY
+      @canvas.background_color = BLACK_ARRAY
       args.outputs.primitives << @canvas
     end
 
@@ -82,7 +91,7 @@ class Game
 
         pixels.each_with_index do |row, y|
           row.chars.each_with_index do |pixel, x|
-            @pixel_array.pixels.fill(WHITE_INT, y * w + x, 1) unless pixel == ' '
+            @pixel_array.pixels.fill(0xFFFFFFFF, y * w + x, 1) unless pixel == ' '
           end
         end
       end
