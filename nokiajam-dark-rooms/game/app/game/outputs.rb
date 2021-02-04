@@ -46,9 +46,15 @@ class Game
       @created_sprites << { id: id, pixels: pixels }
     end
 
-    def render_sprite(x, y, id, options = nil)
-      color = WHITE
-      primitive = { x: x, y: y, path: id, **@sprites[id], **color, **(options || {}) }.sprite
+    def render_sprite(x, y, id, opts = nil)
+      options = opts || {}
+      primitive = { x: x, y: y, path: id, **@sprites[id], **color(options), **options }.sprite
+      @canvas.primitives << primitive
+    end
+
+    def render_rect(x, y, w, h, opts = nil)
+      options = opts || {}
+      primitive = { x: x, y: y, w: w, h: h, **color(options), **options }.solid
       @canvas.primitives << primitive
     end
 
@@ -60,6 +66,10 @@ class Game
     end
 
     private
+
+    def color(options)
+      options[:invert] ? BLACK : WHITE
+    end
 
     def initialize_sprites(args)
       @created_sprites.each do |created_sprite|
