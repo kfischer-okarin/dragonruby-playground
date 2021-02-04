@@ -17,7 +17,7 @@ module DebugExtension
 
       label_pos = pos || [0, @last_debug_y]
       @last_debug_y -= 20 unless pos
-      @debug_logs << [label_pos.x, label_pos.y, message, 0, 0, 0].label
+      @debug_logs << [label_pos.x, label_pos.y, message, 255, 255, 255].label
     end
 
     def tick

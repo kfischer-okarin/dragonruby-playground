@@ -3,14 +3,26 @@ require 'lib/low_resolution_canvas.rb'
 class Game
   # Specialized Outputs for Nokia Jam
   class Outputs
-    W = 84
-    H = 48
+    def self.color_as_int(color)
+      color[2] + color[1] * 0x100 + color[0] * 0x10000 + 0xFF000000
+    end
 
-    BG_COLOR = [199, 240, 216].freeze
-    FG_COLOR = [67, 82, 61].freeze
+    def w
+      84
+    end
+
+    def h
+      48
+    end
+
+    BLACK = [67, 82, 61].freeze
+    WHITE = [199, 240, 216].freeze
+
+    BLACK_INT = color_as_int(BLACK)
+    WHITE_INT = color_as_int(WHITE)
 
     def initialize
-      @canvas = DRT::LowResolutionCanvas.new([W, H])
+      @canvas = DRT::LowResolutionCanvas.new([w, h])
       @sprites = {}
       @created_sprites = []
     end
@@ -33,8 +45,8 @@ class Game
 
     def process(args)
       initialize_sprites(args) unless @created_sprites.empty?
-      args.outputs.background_color = BG_COLOR
-      @canvas.background_color = BG_COLOR
+      args.outputs.background_color = BLACK
+      @canvas.background_color = BLACK
       args.outputs.primitives << @canvas
     end
 
@@ -70,7 +82,7 @@ class Game
 
         pixels.each_with_index do |row, y|
           row.chars.each_with_index do |pixel, x|
-            @pixel_array.pixels.fill(0xFF43523D, y * w + x, 1) unless pixel == ' '
+            @pixel_array.pixels.fill(WHITE_INT, y * w + x, 1) unless pixel == ' '
           end
         end
       end
