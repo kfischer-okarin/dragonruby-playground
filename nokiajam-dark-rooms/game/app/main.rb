@@ -46,13 +46,27 @@ class RoomGenerator
   end
 end
 
+def generate_room(state, position, conditions)
+  state.rooms[state.next_room_id] = $room_generator.generate(conditions)
+  state.room_positions[state.next_room_id] = position
+  state.next_room_id += 1
+end
+
+def current_room(state)
+  state.rooms[state.current_room_id]
+end
+
 def setup(args)
   $inputs = Game::Inputs.new
   $outputs = Game::Outputs.new
   $room_generator = RoomGenerator.new
 
   Sprites.prepare
-  args.state.room = $room_generator.generate(InitialRoom)
+  args.state.next_room_id = 0
+  args.state.rooms = {}
+  args.state.room_positions = {}
+  generate_room(args.state, [0, 0], InitialRoom)
+  args.state.current_room_id = 0
   $non_update_frames = 0
 end
 
@@ -119,11 +133,12 @@ def render_room(room)
 end
 
 def tick_15fps(state, inputs)
-  state.room[:light] = !state.room[:light] if inputs.toggle_light
+  room = current_room(state)
+  room[:light] = !room[:light] if inputs.toggle_light
 end
 
 def render(args)
-  render_room(args.state.room)
+  render_room(current_room(args.state))
   $outputs.process(args)
 end
 
