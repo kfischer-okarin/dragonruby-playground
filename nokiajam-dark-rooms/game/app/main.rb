@@ -8,50 +8,135 @@ require 'app/game/inputs.rb'
 require 'app/game/outputs.rb'
 require 'app/sprites.rb'
 
+module Direction
+  ALL = %i[up down left right].freeze
+  OPPOSITE = { left: :right, right: :left, up: :down, down: :up }.freeze
+  VECTOR = { left: [-1, 0], right: [1, 0], up: [0, 1], down: [0, -1] }.freeze
+
+  def self.opposite_of(direction)
+    OPPOSITE[direction]
+  end
+end
+
 class InitialRoom
   class << self
     def available_directions
-      RoomGenerator::DIRECTIONS
+      Direction::ALL
     end
 
     def number_of_doors
-      (rand * 4).ceil
+      (1..4).to_a.sample
     end
 
-    def room_in_direction(_direction)
+    def room_type_in_direction(_direction)
       :unknown
+    end
+
+    def doors
+      []
     end
   end
 end
 
-class RoomGenerator
-  DIRECTIONS = %i[up down left right].freeze
+class PossibleRoomAt
+  attr_reader :doors, :available_directions
 
+  def initialize(state, position)
+    @state = state
+    @position = position
+    @doors = []
+    @available_directions = []
+    set_doors_and_available_positions
+  end
+
+  def number_of_doors
+    (@doors.size..@available_directions.size).to_a.sample
+  end
+
+  def room_type_in_direction(direction)
+    @doors.include?(direction) ? :generated : :unknown
+  end
+
+  private
+
+  def set_doors_and_available_positions
+    Direction::ALL.each do |direction|
+      neighbor_room = room_in_direction(direction)
+      if neighbor_room
+        door_is_required(direction) if neighbor_room[Direction.opposite_of(direction)]
+      else
+        door_is_possible(direction)
+      end
+    end
+  end
+
+  def room_in_direction(direction)
+    neighbor_position = Room.position_next_to(@position, direction)
+    Room.at(@state, neighbor_position)
+  end
+
+  def door_is_required(direction)
+    @doors << direction
+    door_is_possible(direction)
+  end
+
+  def door_is_possible(direction)
+    @available_directions << direction
+  end
+end
+
+class RoomGenerator
   def generate(conditions)
     door_directions = pick_door_directions(conditions)
 
     { light: false }.tap { |result|
       door_directions.each do |direction|
-        result[direction] = conditions.room_in_direction(direction)
+        result[direction] = conditions.room_type_in_direction(direction)
       end
     }
   end
 
   def pick_door_directions(conditions)
     [].tap { |result|
-      conditions.number_of_doors.times do
+      result.concat conditions.doors
+      doors_to_generate = conditions.number_of_doors - result.size
+      doors_to_generate.times do
         result << (conditions.available_directions - result).sample
       end
     }
   end
 end
 
-def generate_room(state, position, conditions)
-  state.rooms[position] = $room_generator.generate(conditions)
-end
+module Room
+  class << self
+    def at(state, location)
+      state.rooms[location]
+    end
 
-def current_room(state)
-  state.rooms[state.location]
+    def current(state)
+      at(state, state.location)
+    end
+
+    def generate(state, position, conditions)
+      room = $room_generator.generate(conditions)
+      state.rooms[position] = room
+    end
+
+    def position_next_to(position, direction)
+      direction_vector = Direction::VECTOR[direction]
+      [position.x + direction_vector.x, position.y + direction_vector.y]
+    end
+
+    def generate_unknown_neighbors(state, position)
+      room = at(state, position)
+      unknown_directions = Direction::ALL.select { |direction| room[direction] == :unknown }
+      unknown_directions.each do |direction|
+        new_position = position_next_to(position, direction)
+        generate(state, new_position, PossibleRoomAt.new(state, new_position))
+        room[direction] = :generated
+      end
+    end
+  end
 end
 
 def setup(args)
@@ -60,9 +145,9 @@ def setup(args)
   $room_generator = RoomGenerator.new
 
   Sprites.prepare
-  args.state.rooms = {
-    [0, 0] => $room_generator.generate(InitialRoom)
-  }
+  args.state.rooms = {}
+  Room.generate(args.state, [0, 0], InitialRoom)
+  Room.generate_unknown_neighbors(args.state, [0, 0])
   args.state.location = [0, 0]
   $non_update_frames = 0
 end
@@ -130,12 +215,12 @@ def render_room(room)
 end
 
 def tick_15fps(state, inputs)
-  room = current_room(state)
+  room = Room.current(state)
   room[:light] = !room[:light] if inputs.toggle_light
 end
 
 def render(args)
-  render_room(current_room(args.state))
+  render_room(Room.current(args.state))
   $outputs.process(args)
 end
 
