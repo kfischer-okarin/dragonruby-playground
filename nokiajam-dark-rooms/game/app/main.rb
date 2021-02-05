@@ -8,40 +8,51 @@ require 'app/game/inputs.rb'
 require 'app/game/outputs.rb'
 require 'app/sprites.rb'
 
+class InitialRoom
+  class << self
+    def available_directions
+      RoomGenerator::DIRECTIONS
+    end
+
+    def number_of_doors
+      (rand * 4).ceil
+    end
+
+    def room_in_direction(_direction)
+      :unknown
+    end
+  end
+end
+
 class RoomGenerator
   DIRECTIONS = %i[up down left right].freeze
 
-  def generate
-    door_directions = pick_door_directions
+  def generate(conditions)
+    door_directions = pick_door_directions(conditions)
 
     { light: false }.tap { |result|
-      door_directions.each do |door|
-        result[door] = true
+      door_directions.each do |direction|
+        result[direction] = conditions.room_in_direction(direction)
       end
     }
   end
 
-  def pick_door_directions
-    number_of_doors = (rand * 4).ceil
-
+  def pick_door_directions(conditions)
     [].tap { |result|
-      number_of_doors.times do
-        result << (available_directions - result).sample
+      conditions.number_of_doors.times do
+        result << (conditions.available_directions - result).sample
       end
     }
-  end
-
-  def available_directions
-    DIRECTIONS
   end
 end
 
 def setup(args)
   $inputs = Game::Inputs.new
   $outputs = Game::Outputs.new
+  $room_generator = RoomGenerator.new
 
   Sprites.prepare
-  args.state.room = RoomGenerator.new.generate
+  args.state.room = $room_generator.generate(InitialRoom)
   $non_update_frames = 0
 end
 
