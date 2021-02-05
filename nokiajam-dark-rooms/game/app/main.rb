@@ -9,10 +9,12 @@ require 'app/game/outputs.rb'
 require 'app/sprites.rb'
 
 def setup(args)
+  $inputs = Game::Inputs.new
   $outputs = Game::Outputs.new
 
   Sprites.prepare
   args.state.room = { up: rand > 0.5, left: rand > 0.5, right: rand > 0.5, down: rand > 0.5, light: false }
+  $non_update_frames = 0
 end
 
 class RoomRenderer
@@ -77,12 +79,27 @@ def render_room(room)
   RoomRenderer.render_light_beams(room)
 end
 
+def tick_15fps(state, inputs)
+  state.room[:light] = !state.room[:light] if inputs.toggle_light
+end
+
+def render(args)
+  render_room(args.state.room)
+  $outputs.process(args)
+end
+
 def tick(args)
   setup(args) if args.tick_count.zero?
 
-  inputs = Game::Inputs.new(args.inputs)
-  args.state.room[:light] = !args.state.room[:light] if inputs.toggle_light
+  $inputs.collect args.inputs
 
-  render_room(args.state.room)
-  $outputs.process(args)
+  if $non_update_frames < 3
+    $non_update_frames += 1
+  else
+    tick_15fps(args.state, $inputs)
+    $non_update_frames = 0
+    $inputs = Game::Inputs.new
+  end
+
+  render(args)
 end
