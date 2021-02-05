@@ -47,13 +47,11 @@ class RoomGenerator
 end
 
 def generate_room(state, position, conditions)
-  state.rooms[state.next_room_id] = $room_generator.generate(conditions)
-  state.room_positions[state.next_room_id] = position
-  state.next_room_id += 1
+  state.rooms[position] = $room_generator.generate(conditions)
 end
 
 def current_room(state)
-  state.rooms[state.current_room_id]
+  state.rooms[state.location]
 end
 
 def setup(args)
@@ -62,11 +60,10 @@ def setup(args)
   $room_generator = RoomGenerator.new
 
   Sprites.prepare
-  args.state.next_room_id = 0
-  args.state.rooms = {}
-  args.state.room_positions = {}
-  generate_room(args.state, [0, 0], InitialRoom)
-  args.state.current_room_id = 0
+  args.state.rooms = {
+    [0, 0] => $room_generator.generate(InitialRoom)
+  }
+  args.state.location = [0, 0]
   $non_update_frames = 0
 end
 
