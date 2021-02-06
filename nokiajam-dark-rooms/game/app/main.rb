@@ -146,6 +146,15 @@ def setup(args)
   $outputs = Game::Outputs.new
   $room_generator = RoomGenerator.new
 
+  args.state.animations = {}
+  $player_animation = Renderer::Animation.new([
+    Renderer::Animation::Frame.new({ w: 11, h: 17, path: 'resources/character.png', source_w: 11, source_h: 17, source_x: 11, source_y: 0 }, 3),
+    Renderer::Animation::Frame.new({ w: 11, h: 17, path: 'resources/character.png', source_w: 11, source_h: 17, source_x: 22, source_y: 0 }, 3),
+    Renderer::Animation::Frame.new({ w: 11, h: 17, path: 'resources/character.png', source_w: 11, source_h: 17, source_x: 11, source_y: 0 }, 3),
+    Renderer::Animation::Frame.new({ w: 11, h: 17, path: 'resources/character.png', source_w: 11, source_h: 17, source_x: 0, source_y: 0 }, 3)
+  ]).with_strategy(Renderer::Animation::Looping)
+  $player_animation.start(args.state, :player)
+
   Sprites.prepare
   args.state.rooms = {}
   Room.generate(args.state, [0, 0], InitialRoom)
@@ -157,6 +166,16 @@ end
 def tick_15fps(state, inputs)
   room = Room.current(state)
   room[:light] = !room[:light] if inputs.toggle_light
+  # $player_animation.tick(state, :player)
+end
+
+class Scene
+  def self.render(args)
+    Renderer::Room.render(Room.current(args.state))
+
+    $outputs.render $player_animation.rendered(args.state, :player, x: Renderer::Room::LEFT + 9, y: Renderer::Room::BOTTOM + 8)
+    $outputs.process(args)
+  end
 end
 
 def tick(args)
@@ -172,5 +191,5 @@ def tick(args)
     $inputs = Game::Inputs.new
   end
 
-  Renderer.render(args)
+  Scene.render(args)
 end

@@ -1,8 +1,55 @@
 module Renderer
-  class << self
-    def render(args)
-      Room.render(::Room.current(args.state))
-      $outputs.process(args)
+  class Animation
+    Frame = Struct.new(:primitive, :duration)
+
+    class OneTime
+      def self.next_frame_index(frames, animation_state)
+        [animation_state[:frame_index] + 1, frames.size - 1].min
+      end
+    end
+
+    class Looping
+      def self.next_frame_index(frames, animation_state)
+        (animation_state[:frame_index] + 1) % frames.size
+      end
+    end
+
+    def initialize(frames)
+      @frames = frames
+      @strategy = OneTime
+    end
+
+    def with_strategy(strategy)
+      @strategy = strategy
+      self
+    end
+
+    def start(state, id)
+      state.animations[id] = { frame_index: 0, frame_time: 0 }
+    end
+
+    def tick(state, id)
+      advance_frame_time(state.animations[id])
+    end
+
+    def rendered(state, id, values)
+      animation_state = state.animations[id]
+      current_frame(animation_state).primitive.merge(values)
+    end
+
+    private
+
+    def current_frame(animation_state)
+      @frames[animation_state[:frame_index]]
+    end
+
+    def advance_frame_time(animation_state)
+      animation_state[:frame_time] += 1
+      frame_finished = animation_state[:frame_time] > current_frame(animation_state).duration
+      return unless frame_finished
+
+      animation_state[:frame_index] = @strategy.next_frame_index(@frames, animation_state)
+      animation_state[:frame_time] = 0
     end
   end
 
