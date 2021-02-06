@@ -3,83 +3,45 @@ require 'lib/low_resolution_canvas.rb'
 class Game
   # Specialized Outputs for Nokia Jam
   class Outputs
-    def self.color_as_int(color)
-      color[:b] + color[:g] * 0x100 + color[:r] * 0x10000 + 0xFF000000
-    end
-
-    def self.color_as_array(color)
-      [color[:r], color[:g], color[:b]]
-    end
-
-    def w
-      84
-    end
-
-    def h
-      48
-    end
-
-    BLACK = { r: 67, g: 82, b: 61 }.freeze
-    WHITE = { r: 199, g: 240, b: 216 }.freeze
-
-    BLACK_ARRAY = color_as_array(BLACK)
-    WHITE_ARRAY = color_as_array(WHITE)
-
-    BLACK_INT = color_as_int(BLACK)
-    WHITE_INT = color_as_int(WHITE)
+    SCREEN_W = 84
+    SCREEN_H = 48
 
     def initialize
-      @canvas = DRT::LowResolutionCanvas.new([w, h])
+      @canvas = DRT::LowResolutionCanvas.new([SCREEN_W, SCREEN_H])
       @sprites = {}
-      @created_sprites = []
+      @sprites_to_construct = []
+    end
+
+    def sprite(path)
+      @sprites[path]
     end
 
     def register_sprite(sprite)
-      @sprites[sprite.path] = sprite
+      @sprites[sprite.path] = sprite.sprite
     end
 
-    # pixels example:
-    # [
-    #   "  XXXX  ",
-    #   " X    X ",
-    #   "X      X",
-    #   "XXXXXXXX"
-    # ]
-    def create_sprite(id, pixels)
-      register_sprite(path: id, w: pixels[0].size, h: pixels.size)
-      @created_sprites << { id: id, pixels: pixels }
+    def queue_sprite_construction(id, pixels)
+      @sprites_to_construct << { id: id, pixels: pixels }
     end
 
-    def render_sprite(x, y, id, opts = nil)
-      options = opts || {}
-      primitive = { x: x, y: y, **@sprites[id], **color(options), **options }.sprite
-      @canvas.primitives << primitive
-    end
-
-    def render_rect(x, y, w, h, opts = nil)
-      options = opts || {}
-      primitive = { x: x, y: y, w: w, h: h, **color(options), **options }.solid
+    def render(primitive)
       @canvas.primitives << primitive
     end
 
     def process(args)
-      initialize_sprites(args) unless @created_sprites.empty?
-      args.outputs.background_color = BLACK_ARRAY
-      @canvas.background_color = BLACK_ARRAY
+      initialize_sprites(args) unless @sprites_to_construct.empty?
+      args.outputs.background_color = Primitive::BLACK_ARRAY
+      @canvas.background_color = Primitive::BLACK_ARRAY
       args.outputs.primitives << @canvas
     end
 
     private
 
-    def color(options)
-      options[:invert] ? BLACK : WHITE
-    end
-
     def initialize_sprites(args)
-      @created_sprites.each do |created_sprite|
+      @sprites_to_construct.each do |created_sprite|
         SpriteBuilder.new(args, created_sprite[:id]).build(created_sprite[:pixels])
       end
-      @created_sprites.clear
+      @sprites_to_construct.clear
     end
 
     # Build a sprite from a array of strings representing a lowrez 1 color sprite

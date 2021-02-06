@@ -22,9 +22,27 @@ module Sprites
     ]
   }.freeze
 
-  def self.prepare
-    SPRITES.each do |name, pixels|
-      $outputs.create_sprite(name, pixels)
+  class << self
+    def prepare
+      SPRITES.each do |name, pixels|
+        build(name, pixels)
+      end
+    end
+
+    # pixels example:
+    # [
+    #   "  XXXX  ",
+    #   " X    X ",
+    #   "X      X",
+    #   "XXXXXXXX"
+    # ]
+    def build(id, pixels)
+      register(path: id, w: pixels[0].size, h: pixels.size)
+      $outputs.queue_sprite_construction(id, pixels)
+    end
+
+    def register(sprite)
+      $outputs.register_sprite(sprite)
     end
   end
 end
