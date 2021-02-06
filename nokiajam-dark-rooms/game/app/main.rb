@@ -121,7 +121,16 @@ module Room
 
     def generate(state, position, conditions)
       room = $room_generator.generate(conditions)
-      state.rooms[position] = room
+      state.rooms[position] = room.merge(position: position)
+    end
+
+    def neighbor_rooms(state, room)
+      {}.tap { |result|
+        Direction::ALL.each do |direction|
+          neighbor_room = at(state, position_next_to(room[:position], direction))
+          result[direction] = neighbor_room if neighbor_room
+        end
+      }
     end
 
     def position_next_to(position, direction)
@@ -136,6 +145,7 @@ module Room
         new_position = position_next_to(position, direction)
         generate(state, new_position, PossibleRoomAt.new(state, new_position))
         room[direction] = :generated
+        at(state,new_position)[:light] = rand > 0.5
       end
     end
   end
@@ -153,7 +163,7 @@ def setup(args)
     Renderer::Animation::Frame.new({ w: 11, h: 17, path: 'resources/character.png', source_w: 11, source_h: 17, source_x: 11, source_y: 0 }, 3),
     Renderer::Animation::Frame.new({ w: 11, h: 17, path: 'resources/character.png', source_w: 11, source_h: 17, source_x: 0, source_y: 0 }, 3)
   ]).with_strategy(Renderer::Animation::Looping)
-  $player_animation.start(args.state, :player)
+  $player_animation.reset(args.state, :player)
 
   Sprites.prepare
   args.state.rooms = {}
@@ -170,11 +180,23 @@ def tick_15fps(state, inputs)
 end
 
 class Scene
-  def self.render(args)
-    Renderer::Room.render(Room.current(args.state))
+  class << self
+    def render(state)
+      room = Room.current(state)
+      neighbor_rooms = Room.neighbor_rooms(state, room)
+      $outputs.render Renderer::Room.walls(room, neighbor_rooms)
+      $outputs.render Renderer::Room.rendered(room, Room.neighbor_rooms(state, room))
+      neighbor_rooms.each do |direction, neighbor_room|
+        primitives = Renderer::Room.rendered(neighbor_room, Room.neighbor_rooms(state, neighbor_room))
+        $outputs.render(primitives) do |primitive|
+          direction_vector = Direction::VECTOR[direction]
+          primitive.merge(x: primitive.x + direction_vector.x * (Renderer::Room::SIZE + 1),
+                          y: primitive.y + direction_vector.y * (Renderer::Room::SIZE + 1))
+        end
+      end
 
-    $outputs.render $player_animation.rendered(args.state, :player, x: Renderer::Room::LEFT + 9, y: Renderer::Room::BOTTOM + 8)
-    $outputs.process(args)
+      $outputs.render $player_animation.rendered(state, :player, x: Renderer::Room::LEFT + 8, y: Renderer::Room::BOTTOM + 8)
+    end
   end
 end
 
@@ -191,5 +213,6 @@ def tick(args)
     $inputs = Game::Inputs.new
   end
 
-  Scene.render(args)
+  Scene.render(args.state)
+  $outputs.process(args)
 end

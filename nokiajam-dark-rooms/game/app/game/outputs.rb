@@ -24,8 +24,8 @@ class Game
       @sprites_to_construct << { id: id, pixels: pixels }
     end
 
-    def render(primitive)
-      @canvas.primitives << primitive
+    def render(primitive, &transform)
+      @canvas.primitives << transform_primitive(primitive, transform)
     end
 
     def process(args)
@@ -36,6 +36,16 @@ class Game
     end
 
     private
+
+    def transform_primitive(primitive, transform)
+      return primitive unless transform
+
+      if primitive.primitive_marker
+        transform.call(primitive)
+      else
+        primitive.map { |single_primitive| transform.call(single_primitive) }
+      end
+    end
 
     def initialize_sprites(args)
       @sprites_to_construct.each do |created_sprite|

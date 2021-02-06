@@ -24,7 +24,7 @@ module Renderer
       self
     end
 
-    def start(state, id)
+    def reset(state, id)
       state.animations[id] = { frame_index: 0, frame_time: 0 }
     end
 
@@ -61,28 +61,30 @@ module Renderer
     TOP = BOTTOM + SIZE - 1
 
     class << self
-      def render(room)
-        render_walls(room)
-        return unless room[:light]
-
-        $outputs.render light
-        render_light_beams(room)
+      def rendered(room, neighboring_rooms)
+        light_beams(neighboring_rooms).tap { |result|
+          result << light if room[:light]
+        }
       end
 
-      def render_walls(room)
-        return if room[:light]
+      def walls(room, neighboring_rooms)
+        return [] if room[:light]
 
-        $outputs.render Wall.down(room)
-        $outputs.render Wall.up(room)
-        $outputs.render Wall.left(room)
-        $outputs.render Wall.right(room)
+        [].tap { |result|
+          result << Wall.up(room) unless neighboring_rooms.dig(:up, :light)
+          result << Wall.down(room) unless neighboring_rooms.dig(:down, :light)
+          result << Wall.left(room) unless neighboring_rooms.dig(:left, :light)
+          result << Wall.right(room) unless neighboring_rooms.dig(:right, :light)
+        }
       end
 
-      def render_light_beams(room)
-        $outputs.render LightBeam.up_out if room[:up]
-        $outputs.render LightBeam.down_out if room[:down]
-        $outputs.render LightBeam.left_out if room[:left]
-        $outputs.render LightBeam.right_out if room[:right]
+      def light_beams(neighboring_rooms)
+        [].tap { |result|
+          result << LightBeam.from_up if neighboring_rooms.dig(:up, :light)
+          result << LightBeam.from_down if neighboring_rooms.dig(:down, :light)
+          result << LightBeam.from_left if neighboring_rooms.dig(:left, :light)
+          result << LightBeam.from_right if neighboring_rooms.dig(:right, :light)
+        }
       end
 
       def light
@@ -124,20 +126,20 @@ module Renderer
 
   module LightBeam
     class << self
-      def up_out
-        Primitive.sprite(:light_beam, x: Wall::LEFT + 7, y: Wall::TOP, color: :white)
+      def from_down
+        Primitive.sprite(:light_beam, x: Wall::LEFT + 8, y: Wall::BOTTOM, color: :white)
       end
 
-      def down_out
-        Primitive.sprite(:light_beam, x: Wall::LEFT + 8, y: Wall::BOTTOM + 1, angle: 180, angle_anchor_y: 0, color: :white)
+      def from_up
+        Primitive.sprite(:light_beam, x: Wall::LEFT + 9, y: Wall::TOP + 1, angle: 180, angle_anchor_y: 0, color: :white)
       end
 
-      def left_out
-        Primitive.sprite(:light_beam, x: Wall::LEFT - 6, y: Wall::BOTTOM + 14, angle: 90, angle_anchor_y: 0, color: :white)
+      def from_right
+        Primitive.sprite(:light_beam, x: Wall::RIGHT - 5, y: Wall::BOTTOM + 14, angle: 90, angle_anchor_y: 0, color: :white)
       end
 
-      def right_out
-        Primitive.sprite(:light_beam, x: Wall::RIGHT - 7, y: Wall::BOTTOM + 15, angle: 270, angle_anchor_y: 0, color: :white)
+      def from_left
+        Primitive.sprite(:light_beam, x: Wall::LEFT - 6, y: Wall::BOTTOM + 15, angle: 270, angle_anchor_y: 0, color: :white)
       end
     end
   end
