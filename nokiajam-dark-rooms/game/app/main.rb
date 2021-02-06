@@ -195,7 +195,7 @@ class Scene
         end
       end
 
-      $outputs.render $player_animation.rendered(state, :player, x: Renderer::Room::LEFT + 8, y: Renderer::Room::BOTTOM + 8)
+      $outputs.render $player_animation.rendered(state, :player, x: Renderer::Room::LEFT + 12, y: Renderer::Room::BOTTOM + 11)
     end
   end
 end

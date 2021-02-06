@@ -54,7 +54,8 @@ module Renderer
   end
 
   module Room
-    SIZE = 27
+    SIZE = 33
+    DOOR_SIZE = 11
     LEFT = (Game::Outputs::SCREEN_W - SIZE).idiv(2)
     RIGHT = LEFT + SIZE - 1
     BOTTOM = (Game::Outputs::SCREEN_H - SIZE).idiv(2)
@@ -127,19 +128,19 @@ module Renderer
   module LightBeam
     class << self
       def from_down
-        Primitive.sprite(:light_beam, x: Wall::LEFT + 8, y: Wall::BOTTOM, color: :white)
+        Primitive.sprite(:light_beam, x: Wall::LEFT + 10, y: Wall::BOTTOM, color: :white)
       end
 
       def from_up
-        Primitive.sprite(:light_beam, x: Wall::LEFT + 9, y: Wall::TOP + 1, angle: 180, angle_anchor_y: 0, color: :white)
+        Primitive.sprite(:light_beam, x: Wall::LEFT + 11, y: Wall::TOP + 1, angle: 180, angle_anchor_y: 0, color: :white)
       end
 
       def from_right
-        Primitive.sprite(:light_beam, x: Wall::RIGHT - 5, y: Wall::BOTTOM + 14, angle: 90, angle_anchor_y: 0, color: :white)
+        Primitive.sprite(:light_beam, x: Wall::RIGHT - 6, y: Wall::BOTTOM + 17, angle: 90, angle_anchor_y: 0, color: :white)
       end
 
       def from_left
-        Primitive.sprite(:light_beam, x: Wall::LEFT - 6, y: Wall::BOTTOM + 15, angle: 270, angle_anchor_y: 0, color: :white)
+        Primitive.sprite(:light_beam, x: Wall::LEFT - 7, y: Wall::BOTTOM + 18, angle: 270, angle_anchor_y: 0, color: :white)
       end
     end
   end
