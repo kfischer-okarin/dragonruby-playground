@@ -34,6 +34,10 @@ class Game
       @created_sprites = []
     end
 
+    def register_sprite(sprite)
+      @sprites[sprite.path] = sprite
+    end
+
     # pixels example:
     # [
     #   "  XXXX  ",
@@ -42,13 +46,13 @@ class Game
     #   "XXXXXXXX"
     # ]
     def create_sprite(id, pixels)
-      @sprites[id] = { w: pixels[0].size, h: pixels.size }
+      register_sprite(path: id, w: pixels[0].size, h: pixels.size)
       @created_sprites << { id: id, pixels: pixels }
     end
 
     def render_sprite(x, y, id, opts = nil)
       options = opts || {}
-      primitive = { x: x, y: y, path: id, **@sprites[id], **color(options), **options }.sprite
+      primitive = { x: x, y: y, **@sprites[id], **color(options), **options }.sprite
       @canvas.primitives << primitive
     end
 
