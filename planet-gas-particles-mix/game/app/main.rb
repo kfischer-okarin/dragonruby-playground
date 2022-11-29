@@ -6,9 +6,12 @@ require 'lib/resources.rb'
 require 'lib/sprite_resources.rb'
 
 require 'app/resources.rb'
+require 'app/sprite_3d.rb'
+require 'app/particle.rb'
 require 'app/ui/layout.rb'
 require 'app/ui/panel.rb'
 require 'app/ui/ratio_slider.rb'
+require 'app/gas_composition_setting.rb'
 
 class Array
   def z
@@ -17,49 +20,6 @@ class Array
 
   def z=(value)
     self[2] = value
-  end
-end
-
-class Sprite3D < Resources::Sprite
-  attr_reader :z
-
-  def z=(value)
-    camera_distance = 400
-    distance = camera_distance - value
-    @z_factor = distance / camera_distance
-    @z = value
-  end
-
-  def w
-    @w * @z_factor
-  end
-
-  def h
-    @h * @z_factor
-  end
-end
-
-class Particle < Sprite3D
-  def distance_from_center
-    Math.sqrt(@x**2 + @y**2 + @z**2)
-  end
-
-  def draw_override(ffi_draw)
-    alpha = 255 * (@z_factor - 0.4)
-    actual_w = w
-    actual_h = h
-    # x, y, w, h, path
-    ffi_draw.draw_sprite_3 @x + 640 - actual_w.half, @y + 360 - actual_h.half, actual_w, actual_h, path,
-                           # angle, alpha, red_saturation, green_saturation, blue_saturation
-                           nil, alpha, r, g, b,
-                           # tile_x, tile_y, tile_w, tile_h
-                           nil, nil, nil, nil,
-                           # flip_horizontally, flip_vertically,
-                           nil, nil,
-                           # angle_anchor_x, angle_anchor_y,
-                           nil, nil,
-                           # source_x, source_y, source_w, source_h
-                           nil, nil, nil, nil
   end
 end
 
@@ -130,45 +90,6 @@ def random_direction(particle)
   ConstantMomentumRotation.new(particle, v_angle: 0.01, axis: random_axis).tap { |rotation|
     rotation.radius -= rand * 100
   }
-end
-
-class GasCompositionSetting < UI::Panel
-  MOLECULE_COLORS = [
-    { r: 228, g: 59, b: 68 },
-    { r: 62, g: 137, b: 72 },
-    { r: 0, g: 149, b: 233 }
-  ].freeze
-
-  def initialize(particles)
-    super(x: 30, y: 30, w: 1220, h: 100)
-    @particles = particles
-    @layout = UI::Layout.new(self, padding_vertical: 32, padding_horizontal: 20)
-    @ratios = UI::RatioSlider.new(colors: MOLECULE_COLORS)
-    @ratios.input_handlers << method(:on_ratio_changed)
-    on_ratio_changed(@ratios.thumb_values)
-    build_layout
-  end
-
-  private
-
-  def build_layout
-    @layout << @ratios
-    self << @layout
-  end
-
-  def on_ratio_changed(thumb_values)
-    threshold_indexes = [0, *thumb_values, 1].map { |value| value * @particles.size }
-    (0...(threshold_indexes.size - 1)).each do |index|
-      left = threshold_indexes[index]
-      right = threshold_indexes[index + 1]
-      @particles[left..right].each do |particle|
-        color = MOLECULE_COLORS[index]
-        particle.r = color.r
-        particle.g = color.g
-        particle.b = color.b
-      end
-    end
-  end
 end
 
 def setup(args)
