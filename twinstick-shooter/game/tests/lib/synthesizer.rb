@@ -53,6 +53,3 @@ def test_modulate(_args, assert)
 
   assert.equal! frequencies, [110, 110, 90, 90]
 end
-
-$gtk.reset 100
-$gtk.log_level = :off

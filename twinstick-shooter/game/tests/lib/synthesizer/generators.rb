@@ -40,5 +40,3 @@ def test_square_wave_pulse_width(_args, assert)
   assert.equal! samples, [1, -1, -1, -1, 1, -1, -1, -1]
 end
 
-$gtk.reset 100
-$gtk.log_level = :off
