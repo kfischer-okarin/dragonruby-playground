@@ -8,9 +8,16 @@ module ComposableSoundGenerator
   end
 
   def *(other)
-    result = lambda do |t|
-      call(t) * other.call(t)
-    end
+    result = case other
+             when Numeric
+               lambda do |t|
+                 call(t) * other
+               end
+             when Proc
+               lambda do |t|
+                 call(t) * other.call(t)
+               end
+             end
     result.extend ComposableSoundGenerator
     result
   end
