@@ -1,25 +1,21 @@
 module ComposableSoundGenerator
   def +(other)
-    result = lambda do |t|
+    ComposableSoundGenerator.define do |t|
       call(t) + other.call(t)
     end
-    result.extend ComposableSoundGenerator
-    result
   end
 
   def *(other)
-    result = case other
-             when Numeric
-               lambda do |t|
-                 call(t) * other
-               end
-             when Proc
-               lambda do |t|
-                 call(t) * other.call(t)
-               end
-             end
-    result.extend ComposableSoundGenerator
-    result
+    case other
+    when Numeric
+      ComposableSoundGenerator.define do |t|
+        call(t) * other
+      end
+    when Proc
+      ComposableSoundGenerator.define do |t|
+        call(t) * other.call(t)
+      end
+    end
   end
 
   def self.define(&block)
