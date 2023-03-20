@@ -21,21 +21,22 @@ module ComposableSoundGenerator
     result.extend ComposableSoundGenerator
     result
   end
+
+  def self.define(&block)
+    result = lambda(&block)
+    result.extend ComposableSoundGenerator
+    result
+  end
 end
 
 def sin_osc(frequency)
-  result = lambda do |t|
+  ComposableSoundGenerator.define do |t|
     Math.sin(t * frequency * Math::PI * 2) * 0.5
   end
-  result.extend ComposableSoundGenerator
-  result
 end
 
 def line(start_value, end_value, duration)
-  result = lambda do |t|
+  ComposableSoundGenerator.define do |t|
     t < duration ? start_value : end_value
   end
-  result.extend ComposableSoundGenerator
-  result
 end
-
