@@ -83,3 +83,30 @@ def interpolation_curve(t_min: 0, t_max: 1, out_min: 0.0, out_max: 1.0, curve: -
     end
   end
 end
+
+def clip_silence(sound_generator, amp: 0.0001, time: 0.1)
+  state = { phase: :sound, since: 0 }
+  ComposableSoundGenerator.define do |t|
+    return 0 if state[:silence_start] && t >= state[:silence_start]
+
+    value = sound_generator.call(t)
+    case state[:phase]
+    when :sound
+      if value < amp
+        state[:phase] = :quiet
+        state[:since] = t
+      end
+      value
+    when :quiet
+      if value >= amp
+        state[:phase] = :sound
+        return value
+      end
+      if t - state[:since] >= time
+        state[:silence_start] = t
+        return 0
+      end
+      value
+    end
+  end
+end
