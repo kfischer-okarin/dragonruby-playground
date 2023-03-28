@@ -28,6 +28,29 @@ def test_audio_player_play_can_play_on_several_channels(args, assert)
   assert.equal! args.audio.keys, %i[channel1 channel2], 'Expected playing audios with keys :channel1, :channel2'
 end
 
+def test_audio_player_removes_audio_that_returns_finish_audio(args, assert)
+  player = AudioPlayer.new sample_rate: 5
+  generator = ->(t) { t < 0.8 ? t : :finish_audio }
+
+  player.play generator
+  player.tick(args)
+
+  assert.equal! args.audio.keys, %i[channel1], 'Expected playing audio with key :channel1'
+
+  audio = args.audio[:channel1]
+  input = audio[:input]
+  assert.equal! rounded_values(input[2].call), [0, 0.2, 0.4, 0.6], 'Expected audio to return only samples until t=0.8'
+
+  player.tick(args)
+
+  assert.equal! args.audio.keys, %i[channel1], 'Expected audio to be still playing'
+  assert.equal! rounded_values(input[2].call), [], 'Expected audio to return no samples after t=0.8'
+
+  player.tick(args)
+
+  assert.equal! args.audio.keys, [], 'Expected audio to have been removed'
+end
+
 def rounded_values(array)
   array.map { |v| v.round(2) }
 end

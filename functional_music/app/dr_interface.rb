@@ -26,8 +26,19 @@ class AudioPlayer
     audio = { t: 0 }
     sample_generator = lambda do
       result = []
+      if audio[:finish_after_next_samples]
+        audio[:finished] = true
+        return result
+      end
+
       @sample_times.each do |t|
-        result << audio_source.call(audio[:t] + t)
+        value = audio_source.call(audio[:t] + t)
+        if value == :finish_audio
+          audio[:finish_after_next_samples] = true
+          break
+        end
+
+        result << value
       end
       audio[:t] += 1.0
       result
@@ -41,6 +52,13 @@ class AudioPlayer
       args.audio[free_channel] = audio
     end
     @queued_audios.clear
+
+    finished_audios = args.audio.keys.select { |id|
+      args.audio[id][:finished]
+    }
+    finished_audios.each do |id|
+      args.audio.delete(id)
+    end
   end
 
   private
