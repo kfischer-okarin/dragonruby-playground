@@ -1,3 +1,12 @@
+def test_line(_args, assert)
+  generator = line(1, 0.5, 1)
+
+  assert.equal! generator.call(0), 1
+  assert.equal! generator.call(0.5), 0.75
+  assert.equal! generator.call(1), 0.5
+  assert.equal! generator.call(1.5), 0.5
+end
+
 def test_clip_silence(_args, assert)
   generator = lambda do |t|
     case t
