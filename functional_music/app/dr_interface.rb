@@ -19,6 +19,7 @@ class AudioPlayer
     @sample_rate = sample_rate
     @sample_times = (0...sample_rate).map { |i| i / sample_rate.to_f }
     @next_channel = 1
+    @available_channels = []
     @queued_audios = []
   end
 
@@ -58,12 +59,15 @@ class AudioPlayer
     }
     finished_audios.each do |id|
       args.audio.delete(id)
+      @available_channels << id
     end
   end
 
   private
 
   def free_channel
+    return @available_channels.pop if @available_channels.any?
+
     channel = :"channel#{@next_channel}"
     @next_channel += 1
     channel

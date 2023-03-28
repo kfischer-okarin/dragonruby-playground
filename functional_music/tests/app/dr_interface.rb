@@ -51,6 +51,33 @@ def test_audio_player_removes_audio_that_returns_finish_audio(args, assert)
   assert.equal! args.audio.keys, [], 'Expected audio to have been removed'
 end
 
+def test_audio_player_reuses_channels(args, assert)
+  player = AudioPlayer.new sample_rate: 5
+  generator = ->(t) { :finish_audio }
+
+  player.play generator
+  player.tick(args)
+
+  assert.equal! args.audio.keys, %i[channel1], 'Expected playing audio with key :channel1'
+
+  play_until_finished(args, player, :channel1)
+
+  player.play generator
+  player.tick(args)
+
+  assert.equal! args.audio.keys, %i[channel1], 'Expected playing audio with key :channel1'
+end
+
 def rounded_values(array)
   array.map { |v| v.round(2) }
+end
+
+def play_until_finished(args, player, channel)
+  iterations = 0
+  while args.audio.key? channel
+    args.audio[channel][:input][2].call
+    player.tick(args)
+    iterations += 1
+    raise 'Channel did not stop after 1000 iterations' if iterations > 1000
+  end
 end
