@@ -18,6 +18,7 @@ class AudioPlayer
   def initialize(sample_rate:)
     @sample_rate = sample_rate
     @sample_times = (0...sample_rate).map { |i| i / sample_rate.to_f }
+    @queued_audios = []
   end
 
   def play(audio_source)
@@ -31,10 +32,19 @@ class AudioPlayer
       result
     end
     audio[:input] = [1, @sample_rate, sample_generator]
-    @next_audio = audio
+    @queued_audios << audio
   end
 
   def tick(args)
-    args.audio[:channel1] = @next_audio
+    @queued_audios.each do |audio|
+      args.audio[free_channel] = audio
+    end
+    @queued_audios.clear
+  end
+
+  private
+
+  def free_channel
+    :channel1
   end
 end
