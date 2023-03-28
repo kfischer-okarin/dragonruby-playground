@@ -17,6 +17,17 @@ def test_audio_player_play_creates_audio(args, assert)
   assert.equal! audio[:t], 2, 'Expected audio to have advanced to time 2'
 end
 
+def test_audio_player_play_can_play_on_several_channels(args, assert)
+  player = AudioPlayer.new sample_rate: 5
+  generator = ->(t) { t < 1 ? t : 2 - t }
+
+  player.play generator
+  player.play generator
+  player.tick(args)
+
+  assert.equal! args.audio.keys, %i[channel1 channel2], 'Expected playing audios with keys :channel1, :channel2'
+end
+
 def rounded_values(array)
   array.map { |v| v.round(2) }
 end

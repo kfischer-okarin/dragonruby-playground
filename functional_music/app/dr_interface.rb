@@ -18,6 +18,7 @@ class AudioPlayer
   def initialize(sample_rate:)
     @sample_rate = sample_rate
     @sample_times = (0...sample_rate).map { |i| i / sample_rate.to_f }
+    @next_channel = 1
     @queued_audios = []
   end
 
@@ -45,6 +46,8 @@ class AudioPlayer
   private
 
   def free_channel
-    :channel1
+    channel = :"channel#{@next_channel}"
+    @next_channel += 1
+    channel
   end
 end
