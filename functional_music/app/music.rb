@@ -1,6 +1,6 @@
-module ComposableSoundGenerator
+module ComposableAudioSource
   def +(other)
-    ComposableSoundGenerator.define do |t|
+    ComposableAudioSource.define do |t|
       a = call(t)
       return a if a == :finish_audio
 
@@ -14,14 +14,14 @@ module ComposableSoundGenerator
   def *(other)
     case other
     when Numeric
-      ComposableSoundGenerator.define do |t|
+      ComposableAudioSource.define do |t|
         a = call(t)
         return a if a == :finish_audio
 
         a * other
       end
     when Proc
-      ComposableSoundGenerator.define do |t|
+      ComposableAudioSource.define do |t|
         a = call(t)
         return a if a == :finish_audio
 
@@ -35,7 +35,7 @@ module ComposableSoundGenerator
 
   def self.define(&block)
     result = lambda(&block)
-    result.extend ComposableSoundGenerator
+    result.extend ComposableAudioSource
     result
   end
 end
@@ -45,7 +45,7 @@ def mix(sound_generators)
 end
 
 def sin_osc(frequency)
-  ComposableSoundGenerator.define do |t|
+  ComposableAudioSource.define do |t|
     Math.sin(t * frequency * Math::PI * 2) * 0.5
   end
 end
@@ -54,7 +54,7 @@ def line(start_value, end_value, duration, finish_audio_when_done: false)
   value_range = end_value - start_value
 
   if finish_audio_when_done
-    ComposableSoundGenerator.define do |t|
+    ComposableAudioSource.define do |t|
       if t < duration
         start_value + (value_range * (t / duration))
       else
@@ -62,7 +62,7 @@ def line(start_value, end_value, duration, finish_audio_when_done: false)
       end
     end
   else
-    ComposableSoundGenerator.define do |t|
+    ComposableAudioSource.define do |t|
       if t < duration
         start_value + (value_range * (t / duration))
       else
@@ -88,7 +88,7 @@ def envelope(levels, durations, curve)
     t = t_max
   end
 
-  ComposableSoundGenerator.define do |t|
+  ComposableAudioSource.define do |t|
     segment = segments.find { |s| t < s[:t_max] }
 
     segment ? segment[:curve].call(t) : levels.last
@@ -100,7 +100,7 @@ def interpolation_curve(t_min: 0, t_max: 1, out_min: 0.0, out_max: 1.0, curve: -
   out_change = out_max - out_min
   case curve
   when -0.125..0.125 # use linear mapping if curve is close to zero
-    ComposableSoundGenerator.define do |t|
+    ComposableAudioSource.define do |t|
       t = t.clamp(t_min, t_max)
       out_min + out_change * (t - t_min) / t_change
     end
@@ -108,7 +108,7 @@ def interpolation_curve(t_min: 0, t_max: 1, out_min: 0.0, out_max: 1.0, curve: -
     grow = Math.exp(curve)
     a = out_change / (1 - grow)
     b = out_min + a
-    ComposableSoundGenerator.define do |t|
+    ComposableAudioSource.define do |t|
       t = t.clamp(t_min, t_max)
       b - (a * (grow**(t - t_min)))
     end
@@ -117,7 +117,7 @@ end
 
 def clip_silence(sound_generator, amp: 0.0001, time: 0.1)
   state = { phase: :sound, since: 0 }
-  ComposableSoundGenerator.define do |t|
+  ComposableAudioSource.define do |t|
     return 0.0 if state[:silence_start] && t >= state[:silence_start]
 
     value = sound_generator.call(t)
