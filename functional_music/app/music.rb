@@ -1,7 +1,13 @@
 module ComposableSoundGenerator
   def +(other)
     ComposableSoundGenerator.define do |t|
-      call(t) + other.call(t)
+      a = call(t)
+      return a if a == :finish_audio
+
+      b = other.call(t)
+      return b if b == :finish_audio
+
+      a + b
     end
   end
 
@@ -9,11 +15,20 @@ module ComposableSoundGenerator
     case other
     when Numeric
       ComposableSoundGenerator.define do |t|
-        call(t) * other
+        a = call(t)
+        return a if a == :finish_audio
+
+        a * other
       end
     when Proc
       ComposableSoundGenerator.define do |t|
-        call(t) * other.call(t)
+        a = call(t)
+        return a if a == :finish_audio
+
+        b = other.call(t)
+        return b if b == :finish_audio
+
+        a * b
       end
     end
   end
