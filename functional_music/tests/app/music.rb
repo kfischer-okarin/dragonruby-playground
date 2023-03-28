@@ -7,6 +7,15 @@ def test_line(_args, assert)
   assert.equal! generator.call(1.5), 0.5
 end
 
+def test_line_finish_synth_when_done(_args, assert)
+  generator = line(1, 0.5, 1, finish_synth_when_done: true)
+
+  assert.not_equal! generator.call(0), :finish_synth
+  assert.not_equal! generator.call(0.5), :finish_synth
+  assert.equal! generator.call(1), :finish_synth
+  assert.equal! generator.call(1.5), :finish_synth
+end
+
 def test_clip_silence(_args, assert)
   generator = lambda do |t|
     case t

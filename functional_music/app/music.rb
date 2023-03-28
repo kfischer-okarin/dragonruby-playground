@@ -35,14 +35,24 @@ def sin_osc(frequency)
   end
 end
 
-def line(start_value, end_value, duration)
+def line(start_value, end_value, duration, finish_synth_when_done: false)
   value_range = end_value - start_value
 
-  ComposableSoundGenerator.define do |t|
-    if t < duration
-      start_value + (value_range * (t / duration))
-    else
-      end_value
+  if finish_synth_when_done
+    ComposableSoundGenerator.define do |t|
+      if t < duration
+        start_value + (value_range * (t / duration))
+      else
+        :finish_synth
+      end
+    end
+  else
+    ComposableSoundGenerator.define do |t|
+      if t < duration
+        start_value + (value_range * (t / duration))
+      else
+        end_value
+      end
     end
   end
 end
