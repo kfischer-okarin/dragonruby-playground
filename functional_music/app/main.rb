@@ -30,7 +30,7 @@ def bell(frequency = 440, duration = 10, h0 = 1, h1 = 0.6, h2 = 0.4, h3 = 0.25, 
   components = harmonic_series.zip(proportions).map do |harmonic, proportion|
     tone(frequency * harmonic) * perc(release: proportion * duration, level: proportion * 0.5)
   end
-  mix(components)
+  clip_silence(mix(components))
 end
 
 $gtk.reset
