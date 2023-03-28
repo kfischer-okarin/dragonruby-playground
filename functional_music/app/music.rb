@@ -87,7 +87,7 @@ end
 def clip_silence(sound_generator, amp: 0.0001, time: 0.1)
   state = { phase: :sound, since: 0 }
   ComposableSoundGenerator.define do |t|
-    return 0 if state[:silence_start] && t >= state[:silence_start]
+    return 0.0 if state[:silence_start] && t >= state[:silence_start]
 
     value = sound_generator.call(t)
     case state[:phase]
@@ -104,7 +104,7 @@ def clip_silence(sound_generator, amp: 0.0001, time: 0.1)
       end
       if t - state[:since] >= time
         state[:silence_start] = t
-        return 0
+        return 0.0
       end
       value
     end
