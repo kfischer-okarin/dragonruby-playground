@@ -16,5 +16,5 @@ open-source-licenses.txt
 tmp
 VERSION.txt
 
-# Others
-.DS_Store
+# Main playground area
+mygame
