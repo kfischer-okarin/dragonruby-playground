@@ -16,5 +16,8 @@ open-source-licenses.txt
 tmp
 VERSION.txt
 
+Gemfile.lock
+vendor
+
 # Main playground area
 mygame
