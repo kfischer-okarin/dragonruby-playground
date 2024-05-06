@@ -1,0 +1,7 @@
+# Remove the pound sign and leading space for the properties below before publishing your game.
+devid=kfischer-okarin
+devtitle=kfischer_okarin
+gameid=bezier-toolbox
+gametitle=Bezier Toolbox
+version=1.0
+icon=metadata/icon.png
