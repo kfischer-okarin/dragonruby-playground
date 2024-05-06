@@ -6,13 +6,14 @@ def tick(args)
   handle_dragging(args)
 
   args.outputs.primitives << [x_axis, y_axis]
-  args.outputs.primitives << cubic_bezier_curve(args.state.bezier_point1, args.state.bezier_point2)
-  args.outputs.primitives << render_line({ x: 0, y: 0 }, args.state.bezier_point1, color: { r: 0, g: 128, b: 0 })
-  args.outputs.primitives << render_point(args.state.bezier_point1, color: { r: 0, g: 128, b: 0 })
-  args.outputs.primitives << render_point_label(args.state.bezier_point1, color: { r: 0, g: 128, b: 0 })
-  args.outputs.primitives << render_line({ x: 1, y: 1 }, args.state.bezier_point2, color: { r: 128, g: 0, b: 0 })
-  args.outputs.primitives << render_point(args.state.bezier_point2, color: { r: 128, g: 0, b: 0 })
-  args.outputs.primitives << render_point_label(args.state.bezier_point2, color: { r: 128, g: 0, b: 0 })
+  red = { r: 200, g: 0, b: 0 }
+  args.outputs.primitives << cubic_bezier_curve(args.state.bezier_point1, args.state.bezier_point2, color: red)
+  args.outputs.primitives << render_line({ x: 0, y: 0 }, args.state.bezier_point1, color: red)
+  args.outputs.primitives << render_point(args.state.bezier_point1, color: red)
+  args.outputs.primitives << render_point_label(args.state.bezier_point1, color: red)
+  args.outputs.primitives << render_line({ x: 1, y: 1 }, args.state.bezier_point2, color: red)
+  args.outputs.primitives << render_point(args.state.bezier_point2, color: red)
+  args.outputs.primitives << render_point_label(args.state.bezier_point2, color: red)
   args.outputs.debug.watch $gtk.current_framerate.to_i.to_s
 end
 
@@ -52,7 +53,7 @@ def control_point_handles(args)
   }
 end
 
-def cubic_bezier_curve(point1, point2)
+def cubic_bezier_curve(point1, point2, color: nil)
   resolution = 100
   start_point = { x: 0, y: 0 }
   end_point = { x: 1, y: 1 }
@@ -73,7 +74,7 @@ def cubic_bezier_curve(point1, point2)
       **convert_coordinates(last_point),
       x2: converted_next_point[:x],
       y2: converted_next_point[:y],
-      r: 255, g: 0, b: 0
+      **(color || { r: 0, g: 0, b: 0 })
     }
     last_point = { x: x, y: y }
   end
