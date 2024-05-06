@@ -12,8 +12,12 @@ def tick(args)
     { x: 2/3, y: 0.25 },
     { x: 1, y: 1 }
   ]
-  args.state.bezier_point1 ||= { x: 0.25, y: 0.1 }
-  args.state.bezier_point2 ||= { x: 0.25, y: 1 }
+  args.state.bezier_points ||= [
+    { x: 0, y: 0 },
+    { x: 0.25, y: 0.1 },
+    { x: 0.25, y: 1 },
+    { x: 1, y: 1 }
+  ]
 
   handle_dragging(args)
   args.state.dr_spline_points.each_with_index do |point, index|
@@ -23,11 +27,8 @@ def tick(args)
 
   args.outputs.primitives << [x_axis, y_axis]
   if args.state.options[:show_bezier]
-    args.outputs.primitives << cubic_bezier_curve(args.state.bezier_point1, args.state.bezier_point2, color: RED)
-    args.outputs.primitives << render_line({ x: 0, y: 0 }, args.state.bezier_point1, color: RED)
-    args.outputs.primitives << render_point(args.state.bezier_point1, color: RED)
-    args.outputs.primitives << render_line({ x: 1, y: 1 }, args.state.bezier_point2, color: RED)
-    args.outputs.primitives << render_point(args.state.bezier_point2, color: RED)
+    args.outputs.primitives << cubic_bezier_curve(args.state.bezier_points, color: RED)
+    args.outputs.primitives << render_spline_points(args.state.bezier_points, color: RED)
   end
 
   args.outputs.primitives << dr_bezier_curve(
@@ -90,16 +91,13 @@ def control_point_handles(args)
   end
 
   if args.state.options[:show_bezier]
-    result << {
-      point: args.state.bezier_point1,
-      rect: point_rect(args.state.bezier_point1),
-      color: RED
-    }
-    result << {
-      point: args.state.bezier_point2,
-      rect: point_rect(args.state.bezier_point2),
-      color: RED
-    }
+    args.state.bezier_points.each do |point|
+      result << {
+        point: point,
+        rect: point_rect(point),
+        color: RED
+      }
+    end
   end
 
   result
@@ -186,21 +184,16 @@ def render_spline_points(spline_points, color: nil)
   result
 end
 
-def cubic_bezier_curve(point1, point2, color: nil)
+def cubic_bezier_curve(bezier_points, color: nil)
   resolution = 100
-  start_point = { x: 0, y: 0 }
-  end_point = { x: 1, y: 1 }
-  last_point = start_point
+  last_point = bezier_points[0]
   result = []
   resolution.times do |i|
     t = i / resolution
     s = 1 - t
-    factor1 = s**3
-    factor2 = 3 * s**2 * t
-    factor3 = 3 * s * t**2
-    factor4 = t**3
-    x = (factor1 * start_point[:x]) + (factor2 * point1[:x]) + (factor3 * point2[:x]) + (factor4 * end_point[:x])
-    y = (factor1 * start_point[:y]) + (factor2 * point1[:y]) + (factor3 * point2[:y]) + (factor4 * end_point[:y])
+    factors = [s**3, 3 * s**2 * t, 3 * s * t**2, t**3]
+    x = factors.zip(bezier_points.map(&:x)).map { |(factor, x)| factor * x }.sum
+    y = factors.zip(bezier_points.map(&:y)).map { |(factor, y)| factor * y }.sum
     converted_next_point = convert_coordinates(x: x, y: y)
 
     result << {
