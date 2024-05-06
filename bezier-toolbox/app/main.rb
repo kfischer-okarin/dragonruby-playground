@@ -21,7 +21,7 @@ def tick(args)
 
   handle_dragging(args)
   fix_dr_bezier_points_x(args)
-  handle_options(args)
+  handle_controls(args)
 
   args.outputs.primitives << [x_axis, y_axis]
   if args.state.options[:show_bezier]
@@ -41,12 +41,24 @@ def tick(args)
   end
 
   render_ease_spline_code(args)
+  label_x = 1030
   args.outputs.labels << {
-    x: 1260, y: 700,
+    x: label_x, y: 700,
     text: 'b: toggle cubic bezier',
-    **RED,
-    alignment_enum: 2
+    **RED
   }
+  args.outputs.labels << {
+    x: label_x, y: 675,
+    text: '+: add spline segment',
+    **BLUE
+  }
+  if args.state.dr_spline_points.length > 4
+    args.outputs.labels << {
+      x: label_x, y: 650,
+      text: '-: remove spline segment',
+      **BLUE
+    }
+  end
   args.outputs.debug.watch $gtk.current_framerate.to_i.to_s
 end
 
@@ -103,15 +115,35 @@ def control_point_handles(args)
 end
 
 def fix_dr_bezier_points_x(args)
-  args.state.dr_spline_points.each_with_index do |point, index|
-    point[:x] = index / (args.state.dr_spline_points.length - 1)
+  args.state.dr_spline_points.each_with_index do |point, i|
+    point[:x] = i / (args.state.dr_spline_points.length - 1)
   end
 end
 
-def handle_options(args)
+def handle_controls(args)
   keyboard = args.inputs.keyboard
   options = args.state.options
   options[:show_bezier] = !options[:show_bezier] if keyboard.key_down.b
+  add_spline_segment(args) if keyboard.key_down.plus
+  remove_spline_segment(args) if keyboard.key_down.minus && args.state.dr_spline_points.length > 4
+end
+
+def add_spline_segment(args)
+  spline_points = args.state.dr_spline_points
+  second_to_last_point = spline_points[-2]
+  3.times do
+    spline_points.insert(
+      -2,
+      {
+        x: 0,
+        y: second_to_last_point[:y]
+      }
+    )
+  end
+end
+
+def remove_spline_segment(args)
+  3.times { args.state.dr_spline_points.delete_at(-2) }
 end
 
 def dr_bezier_curve(spline_points, color: nil)
@@ -214,7 +246,7 @@ end
 
 def render_bezier_points(args)
   args.outputs.primitives << {
-    x: 600, y: 480,
+    x: 600, y: 475,
     text: 'Cubic Bezier Control Points:',
     **RED
   }
