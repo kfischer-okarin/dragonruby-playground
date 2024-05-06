@@ -8,9 +8,9 @@ def tick(args)
   args.state.drag ||= { state: :not_dragging }
   args.state.dr_spline_points ||= [
     { x: 0, y: 0 },
-    { x: 1/3, y: 0.25 },
-    { x: 2/3, y: 0.25 },
-    { x: 1, y: 1 }
+    { x: 0, y: 0.25 },
+    { x: 0, y: 0.25 },
+    { x: 0, y: 1 }
   ]
   args.state.bezier_points ||= [
     { x: 0, y: 0 },
@@ -20,9 +20,7 @@ def tick(args)
   ]
 
   handle_dragging(args)
-  args.state.dr_spline_points.each_with_index do |point, index|
-    point[:x] = index / 3
-  end
+  fix_dr_bezier_points_x(args)
   handle_options(args)
 
   args.outputs.primitives << [x_axis, y_axis]
@@ -104,6 +102,12 @@ def control_point_handles(args)
   result
 end
 
+def fix_dr_bezier_points_x(args)
+  args.state.dr_spline_points.each_with_index do |point, index|
+    point[:x] = index / (args.state.dr_spline_points.length - 1)
+  end
+end
+
 def handle_options(args)
   keyboard = args.inputs.keyboard
   options = args.state.options
@@ -165,7 +169,7 @@ def dr_spline_points_to_easing_spline(spline_points)
     previous_spline = result[-1]
     result << [
       previous_spline[3],
-      **spline_points[index..index + 2].map(&:y),
+      *spline_points[index..index + 2].map(&:y),
     ]
     index += 3
   end
