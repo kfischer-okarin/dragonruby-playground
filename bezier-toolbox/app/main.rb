@@ -232,9 +232,9 @@ def y_axis
   }
 end
 
-RENDER_SCALE = 480
-RENDER_ORIGIN_X = (1280 - RENDER_SCALE) / 2
+RENDER_SCALE = 320
 RENDER_ORIGIN_Y = (720 - RENDER_SCALE) / 2
+RENDER_ORIGIN_X = RENDER_ORIGIN_Y
 
 def convert_coordinates(point)
   {
