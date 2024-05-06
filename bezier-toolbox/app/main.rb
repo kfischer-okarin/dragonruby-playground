@@ -1,3 +1,6 @@
+RED = { r: 200, g: 0, b: 0 }
+BLUE = { r: 0, g: 0, b: 255 }
+
 def tick(args)
   args.state.options ||= {
     show_bezier: true
@@ -19,29 +22,29 @@ def tick(args)
   handle_options(args)
 
   args.outputs.primitives << [x_axis, y_axis]
-  red = { r: 200, g: 0, b: 0 }
   if args.state.options[:show_bezier]
-    args.outputs.primitives << cubic_bezier_curve(args.state.bezier_point1, args.state.bezier_point2, color: red)
-    args.outputs.primitives << render_line({ x: 0, y: 0 }, args.state.bezier_point1, color: red)
-    args.outputs.primitives << render_point(args.state.bezier_point1, color: red)
-    args.outputs.primitives << render_point_label(args.state.bezier_point1, color: red)
-    args.outputs.primitives << render_line({ x: 1, y: 1 }, args.state.bezier_point2, color: red)
-    args.outputs.primitives << render_point(args.state.bezier_point2, color: red)
-    args.outputs.primitives << render_point_label(args.state.bezier_point2, color: red)
+    args.outputs.primitives << cubic_bezier_curve(args.state.bezier_point1, args.state.bezier_point2, color: RED)
+    args.outputs.primitives << render_line({ x: 0, y: 0 }, args.state.bezier_point1, color: RED)
+    args.outputs.primitives << render_point(args.state.bezier_point1, color: RED)
+    args.outputs.primitives << render_line({ x: 1, y: 1 }, args.state.bezier_point2, color: RED)
+    args.outputs.primitives << render_point(args.state.bezier_point2, color: RED)
   end
 
-  blue = { r: 0, g: 0, b: 255 }
   args.outputs.primitives << dr_bezier_curve(
     args.state.dr_spline_points,
-    color: blue
+    color: BLUE
   )
-  args.outputs.primitives << render_spline_points(args.state.dr_spline_points, color: blue)
+  args.outputs.primitives << render_spline_points(args.state.dr_spline_points, color: BLUE)
+  if args.state.drag[:handle]
+     handle = args.state.drag[:handle]
+     args.outputs.primitives << point_label(handle[:point], color: handle[:color])
+  end
 
   render_ease_spline_code(args)
   args.outputs.labels << {
     x: 1260, y: 700,
     text: 'b: toggle cubic bezier',
-    **red,
+    **RED,
     alignment_enum: 2
   }
   args.outputs.debug.watch $gtk.current_framerate.to_i.to_s
@@ -81,18 +84,21 @@ def control_point_handles(args)
   args.state.dr_spline_points.each do |point|
     result << {
       point: point,
-      rect: point_rect(point)
+      rect: point_rect(point),
+      color: BLUE
     }
   end
 
   if args.state.options[:show_bezier]
     result << {
       point: args.state.bezier_point1,
-      rect: point_rect(args.state.bezier_point1)
+      rect: point_rect(args.state.bezier_point1),
+      color: RED
     }
     result << {
       point: args.state.bezier_point2,
-      rect: point_rect(args.state.bezier_point2)
+      rect: point_rect(args.state.bezier_point2),
+      color: RED
     }
   end
 
@@ -129,11 +135,10 @@ end
 
 def render_ease_spline_code(args)
   spline = dr_spline_points_to_easing_spline(args.state.dr_spline_points)
-  blue = { r: 0, g: 0, b: 255 }
   args.outputs.labels << {
     x: 600, y: 400,
     text: 'args.easing.ease_spline(start_tick, current_tick, duration, [',
-    **blue
+    **BLUE
   }
   y = 375
   spline.each do |segment|
@@ -141,14 +146,14 @@ def render_ease_spline_code(args)
     args.outputs.labels << {
       x: 620, y: y,
       text: formatted_segment,
-      **blue
+      **BLUE
     }
     y -= 25
   end
   args.outputs.labels << {
     x: 600, y: y,
     text: '])',
-    **blue
+    **BLUE
   }
 end
 
@@ -172,7 +177,6 @@ def render_spline_points(spline_points, color: nil)
   result = []
   spline_points.each_with_index do |point, index|
     result << render_point(point, color: color)
-    result << render_point_label(point, color: color)
     if (index - 1) % 3 == 0
       result << render_line(spline_points[index - 1], point, color: color)
     elsif (index - 1) % 3 == 1
@@ -210,17 +214,27 @@ def cubic_bezier_curve(point1, point2, color: nil)
   result
 end
 
-def render_point_label(point, color: nil)
+def point_label(point, color: nil)
   converted_point = convert_coordinates(point)
   y_offset = point[:y] > 0.5 ? -10 : 25
-  {
-    x: converted_point[:x],
-    y: converted_point[:y] + y_offset,
-    text: '(%0.2f, %0.2f)' % [point[:x], point[:y]],
-    size_enum: -2,
-    alignment_enum: 1,
-    **(color || { r: 0, g: 0, b: 0 })
-  }
+  [
+    {
+      x: converted_point[:x] - 50,
+      y: converted_point[:y] + y_offset - 20,
+      w: 100,
+      h: 20,
+      path: :pixel,
+      r: 255, g: 255, b: 255
+    },
+    {
+      x: converted_point[:x],
+      y: converted_point[:y] + y_offset,
+      text: '(%0.2f, %0.2f)' % [point[:x], point[:y]],
+      size_enum: -2,
+      alignment_enum: 1,
+      **(color || { r: 0, g: 0, b: 0 })
+    }
+  ]
 end
 
 def render_line(start_point, end_point, color: nil)
