@@ -31,6 +31,17 @@ def tick(args)
   args.outputs.primitives << render_line({ x: 1, y: 1 }, args.state.dr_bezier_point2, color: blue)
   args.outputs.primitives << render_point(args.state.dr_bezier_point2, color: blue)
   args.outputs.primitives << render_point_label(args.state.dr_bezier_point2, color: blue)
+
+  args.outputs.labels << {
+    x: 640,
+    y: 50,
+    text: 'GTK::Geometry.cubic_bezier(t, 0, %0.2f, %0.2f, 1)' % [
+      args.state.dr_bezier_point1[:y],
+      args.state.dr_bezier_point2[:y]
+    ],
+    alignment_enum: 1,
+    **blue
+  }
   args.outputs.debug.watch $gtk.current_framerate.to_i.to_s
 end
 
