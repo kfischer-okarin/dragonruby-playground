@@ -5,6 +5,7 @@ def tick(args)
   args.state.options ||= {
     show_bezier: true
   }
+  args.state.fitting ||= {}
   args.state.drag ||= { state: :not_dragging }
   args.state.dr_spline_points ||= [
     { x: 0, y: 0 },
@@ -19,9 +20,13 @@ def tick(args)
     { x: 1, y: 1 }
   ]
 
-  handle_dragging(args)
-  fix_dr_bezier_points_x(args)
-  handle_controls(args)
+  if args.state.fitting[:progress]
+    fitting_step(args)
+  else
+    handle_dragging(args)
+    fix_dr_bezier_points_x(args)
+    handle_controls(args)
+  end
 
   args.outputs.primitives << [x_axis, y_axis]
   if args.state.options[:show_bezier]
@@ -56,6 +61,13 @@ def tick(args)
     args.outputs.labels << {
       x: label_x, y: 650,
       text: '-: remove spline segment',
+      **BLUE
+    }
+  end
+  if !args.state.fitting[:progress]
+    args.outputs.labels << {
+      x: label_x, y: 625,
+      text: 'f: fit spline',
       **BLUE
     }
   end
@@ -126,6 +138,7 @@ def handle_controls(args)
   options[:show_bezier] = !options[:show_bezier] if keyboard.key_down.b
   add_spline_segment(args) if keyboard.key_down.plus
   remove_spline_segment(args) if keyboard.key_down.minus && args.state.dr_spline_points.length > 4
+  start_fitting(args) if keyboard.key_down.f
 end
 
 def add_spline_segment(args)
@@ -144,6 +157,64 @@ end
 
 def remove_spline_segment(args)
   3.times { args.state.dr_spline_points.delete_at(-2) }
+end
+
+def start_fitting(args)
+  args.state.fitting = {
+    progress: 0,
+    best_error: Float::INFINITY,
+    best_solution: nil
+  }
+end
+
+def fitting_step(args)
+  spline_points = args.state.dr_spline_points
+  fitting = args.state.fitting
+  max_iterations = 1000
+  100.times do
+    before = spline_points.map(&:dup)
+
+    spline_points[1..-2].each_with_index do |point, i|
+      original_y = point[:y]
+      increased = point[:y] + 0.01
+      decreased = point[:y] - 0.01
+      point[:y] = increased
+      error_increased = calc_error(args)
+      point[:y] = original_y
+      if error_increased < fitting[:best_error]
+        fitting[:best_error] = error_increased
+        point[:y] = increased
+        original_y = increased
+      end
+      point[:y] = decreased
+      error_decreased = calc_error(args)
+      point[:y] = original_y
+      if error_decreased < fitting[:best_error]
+        fitting[:best_error] = error_decreased
+        point[:y] = decreased
+      end
+    end
+
+    fitting[:progress] += 1
+    if fitting[:progress] >= max_iterations || before == spline_points
+      args.state.fitting = {}
+      break
+    end
+  end
+end
+
+def calc_error(args)
+  result = 0
+  resolution = 100
+  bezier_points = args.state.bezier_points
+  spline = dr_spline_points_to_easing_spline(args.state.dr_spline_points)
+  resolution.times do |i|
+    t = i / resolution
+    bezier_point = calc_bezier_point(bezier_points, t)
+    spline_point = $args.easing.ease_spline(0, bezier_point[:x] * resolution, resolution, spline)
+    result += (bezier_point[:y] - spline_point)**2
+  end
+  result
 end
 
 def dr_bezier_curve(spline_points, color: nil)
