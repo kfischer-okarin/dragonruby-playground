@@ -1,4 +1,7 @@
 def tick(args)
+  args.state.options ||= {
+    show_bezier: true
+  }
   args.state.drag ||= { state: :not_dragging }
   args.state.bezier_point1 ||= { x: 0.25, y: 0.1 }
   args.state.bezier_point2 ||= { x: 0.25, y: 1 }
@@ -8,16 +11,19 @@ def tick(args)
   handle_dragging(args)
   args.state.dr_bezier_point1[:x] = 0.33
   args.state.dr_bezier_point2[:x] = 0.66
+  handle_options(args)
 
   args.outputs.primitives << [x_axis, y_axis]
   red = { r: 200, g: 0, b: 0 }
-  args.outputs.primitives << cubic_bezier_curve(args.state.bezier_point1, args.state.bezier_point2, color: red)
-  args.outputs.primitives << render_line({ x: 0, y: 0 }, args.state.bezier_point1, color: red)
-  args.outputs.primitives << render_point(args.state.bezier_point1, color: red)
-  args.outputs.primitives << render_point_label(args.state.bezier_point1, color: red)
-  args.outputs.primitives << render_line({ x: 1, y: 1 }, args.state.bezier_point2, color: red)
-  args.outputs.primitives << render_point(args.state.bezier_point2, color: red)
-  args.outputs.primitives << render_point_label(args.state.bezier_point2, color: red)
+  if args.state.options[:show_bezier]
+    args.outputs.primitives << cubic_bezier_curve(args.state.bezier_point1, args.state.bezier_point2, color: red)
+    args.outputs.primitives << render_line({ x: 0, y: 0 }, args.state.bezier_point1, color: red)
+    args.outputs.primitives << render_point(args.state.bezier_point1, color: red)
+    args.outputs.primitives << render_point_label(args.state.bezier_point1, color: red)
+    args.outputs.primitives << render_line({ x: 1, y: 1 }, args.state.bezier_point2, color: red)
+    args.outputs.primitives << render_point(args.state.bezier_point2, color: red)
+    args.outputs.primitives << render_point_label(args.state.bezier_point2, color: red)
+  end
 
   blue = { r: 0, g: 0, b: 255 }
   args.outputs.primitives << dr_bezier_curve(
@@ -33,8 +39,7 @@ def tick(args)
   args.outputs.primitives << render_point_label(args.state.dr_bezier_point2, color: blue)
 
   args.outputs.labels << {
-    x: 20,
-    y: 60,
+    x: 20, y: 60,
     text: 'GTK::Geometry.cubic_bezier(t, 0, %0.2f, %0.2f, 1)' % [
       args.state.dr_bezier_point1[:y],
       args.state.dr_bezier_point2[:y]
@@ -42,13 +47,18 @@ def tick(args)
     **blue
   }
   args.outputs.labels << {
-    x: 20,
-    y: 30,
+    x: 20, y: 30,
     text: 'args.easing.ease_spline(start_tick, current_tick, duration, [[0, %0.2f, %0.2f, 1]])' % [
       args.state.dr_bezier_point1[:y],
       args.state.dr_bezier_point2[:y]
     ],
     **blue
+  }
+  args.outputs.labels << {
+    x: 1260, y: 700,
+    text: 'Toggle 2D cubic bezier with b',
+    **red,
+    alignment_enum: 2
   }
   args.outputs.debug.watch $gtk.current_framerate.to_i.to_s
 end
@@ -83,12 +93,23 @@ def handle_dragging(args)
 end
 
 def control_point_handles(args)
-  {
-    bezier_point1: point_rect(args.state.bezier_point1),
-    bezier_point2: point_rect(args.state.bezier_point2),
+  result = {
     dr_bezier_point1: point_rect(args.state.dr_bezier_point1),
     dr_bezier_point2: point_rect(args.state.dr_bezier_point2)
   }
+
+  if args.state.options[:show_bezier]
+    result[:bezier_point1] = point_rect(args.state.bezier_point1)
+    result[:bezier_point2] = point_rect(args.state.bezier_point2)
+  end
+
+  result
+end
+
+def handle_options(args)
+  keyboard = args.inputs.keyboard
+  options = args.state.options
+  options[:show_bezier] = !options[:show_bezier] if keyboard.key_down.b
 end
 
 def dr_bezier_curve(value1, value2, color: nil)
