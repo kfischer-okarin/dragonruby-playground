@@ -2,8 +2,12 @@ def tick(args)
   args.state.drag ||= { state: :not_dragging }
   args.state.bezier_point1 ||= { x: 0.25, y: 0.1 }
   args.state.bezier_point2 ||= { x: 0.25, y: 1 }
+  args.state.dr_bezier_point1 ||= { x: 0.33, y: 0.25 }
+  args.state.dr_bezier_point2 ||= { x: 0.66, y: 0.25 }
 
   handle_dragging(args)
+  args.state.dr_bezier_point1[:x] = 0.33
+  args.state.dr_bezier_point2[:x] = 0.66
 
   args.outputs.primitives << [x_axis, y_axis]
   red = { r: 200, g: 0, b: 0 }
@@ -14,6 +18,19 @@ def tick(args)
   args.outputs.primitives << render_line({ x: 1, y: 1 }, args.state.bezier_point2, color: red)
   args.outputs.primitives << render_point(args.state.bezier_point2, color: red)
   args.outputs.primitives << render_point_label(args.state.bezier_point2, color: red)
+
+  blue = { r: 0, g: 0, b: 255 }
+  args.outputs.primitives << dr_bezier_curve(
+    args.state.dr_bezier_point1[:y],
+    args.state.dr_bezier_point2[:y],
+    color: blue
+  )
+  args.outputs.primitives << render_line({ x: 0, y: 0 }, args.state.dr_bezier_point1, color: blue)
+  args.outputs.primitives << render_point(args.state.dr_bezier_point1, color: blue)
+  args.outputs.primitives << render_point_label(args.state.dr_bezier_point1, color: blue)
+  args.outputs.primitives << render_line({ x: 1, y: 1 }, args.state.dr_bezier_point2, color: blue)
+  args.outputs.primitives << render_point(args.state.dr_bezier_point2, color: blue)
+  args.outputs.primitives << render_point_label(args.state.dr_bezier_point2, color: blue)
   args.outputs.debug.watch $gtk.current_framerate.to_i.to_s
 end
 
@@ -36,8 +53,8 @@ def handle_dragging(args)
   when :dragging
     if mouse.button_left
       point = args.state.send(args.state.drag[:point_id])
-      diff_x = (mouse.x - args.state.drag[:start][:x]) / 640.0
-      diff_y = (mouse.y - args.state.drag[:start][:y]) / 640.0
+      diff_x = (mouse.x - args.state.drag[:start][:x]) / RENDER_SCALE
+      diff_y = (mouse.y - args.state.drag[:start][:y]) / RENDER_SCALE
       point[:x] = args.state.drag[:point_start][:x] + diff_x
       point[:y] = args.state.drag[:point_start][:y] + diff_y
     else
@@ -49,8 +66,31 @@ end
 def control_point_handles(args)
   {
     bezier_point1: point_rect(args.state.bezier_point1),
-    bezier_point2: point_rect(args.state.bezier_point2)
+    bezier_point2: point_rect(args.state.bezier_point2),
+    dr_bezier_point1: point_rect(args.state.dr_bezier_point1),
+    dr_bezier_point2: point_rect(args.state.dr_bezier_point2)
   }
+end
+
+def dr_bezier_curve(value1, value2, color: nil)
+  resolution = 100
+  start_point = { x: 0, y: 0 }
+  last_point = start_point
+  result = []
+  resolution.times do |i|
+    t = i / resolution
+    y = GTK::Geometry.cubic_bezier(t, 0, value1, value2, 1)
+    converted_next_point = convert_coordinates(x: t, y: y)
+
+    result << {
+      **convert_coordinates(last_point),
+      x2: converted_next_point[:x],
+      y2: converted_next_point[:y],
+      **(color || { r: 0, g: 0, b: 0 })
+    }
+    last_point = { x: t, y: y }
+  end
+  result
 end
 
 def cubic_bezier_curve(point1, point2, color: nil)
@@ -152,9 +192,13 @@ def y_axis
   }
 end
 
+RENDER_SCALE = 480
+RENDER_ORIGIN_X = (1280 - RENDER_SCALE) / 2
+RENDER_ORIGIN_Y = (720 - RENDER_SCALE) / 2
+
 def convert_coordinates(point)
   {
-    x: 320 + point[:x] * 640,
-    y: 40 + point[:y] * 640
+    x: RENDER_ORIGIN_X + point[:x] * RENDER_SCALE,
+    y: RENDER_ORIGIN_Y + point[:y] * RENDER_SCALE
   }
 end
