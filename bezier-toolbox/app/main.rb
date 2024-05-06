@@ -3,14 +3,19 @@ def tick(args)
     show_bezier: true
   }
   args.state.drag ||= { state: :not_dragging }
+  args.state.dr_spline_points ||= [
+    { x: 0, y: 0 },
+    { x: 1/3, y: 0.25 },
+    { x: 2/3, y: 0.25 },
+    { x: 1, y: 1 }
+  ]
   args.state.bezier_point1 ||= { x: 0.25, y: 0.1 }
   args.state.bezier_point2 ||= { x: 0.25, y: 1 }
-  args.state.dr_bezier_point1 ||= { x: 0.33, y: 0.25 }
-  args.state.dr_bezier_point2 ||= { x: 0.66, y: 0.25 }
 
   handle_dragging(args)
-  args.state.dr_bezier_point1[:x] = 0.33
-  args.state.dr_bezier_point2[:x] = 0.66
+  args.state.dr_spline_points.each_with_index do |point, index|
+    point[:x] = index / 3
+  end
   handle_options(args)
 
   args.outputs.primitives << [x_axis, y_axis]
@@ -27,36 +32,36 @@ def tick(args)
 
   blue = { r: 0, g: 0, b: 255 }
   args.outputs.primitives << dr_bezier_curve(
-    args.state.dr_bezier_point1[:y],
-    args.state.dr_bezier_point2[:y],
+    args.state.dr_spline_points[1][:y],
+    args.state.dr_spline_points[2][:y],
     color: blue
   )
-  args.outputs.primitives << render_line({ x: 0, y: 0 }, args.state.dr_bezier_point1, color: blue)
-  args.outputs.primitives << render_point(args.state.dr_bezier_point1, color: blue)
-  args.outputs.primitives << render_point_label(args.state.dr_bezier_point1, color: blue)
-  args.outputs.primitives << render_line({ x: 1, y: 1 }, args.state.dr_bezier_point2, color: blue)
-  args.outputs.primitives << render_point(args.state.dr_bezier_point2, color: blue)
-  args.outputs.primitives << render_point_label(args.state.dr_bezier_point2, color: blue)
+  args.outputs.primitives << render_line({ x: 0, y: 0 }, args.state.dr_spline_points[1], color: blue)
+  args.outputs.primitives << render_point(args.state.dr_spline_points[1], color: blue)
+  args.outputs.primitives << render_point_label(args.state.dr_spline_points[1], color: blue)
+  args.outputs.primitives << render_line({ x: 1, y: 1 }, args.state.dr_spline_points[2], color: blue)
+  args.outputs.primitives << render_point(args.state.dr_spline_points[2], color: blue)
+  args.outputs.primitives << render_point_label(args.state.dr_spline_points[2], color: blue)
 
   args.outputs.labels << {
     x: 20, y: 60,
     text: 'GTK::Geometry.cubic_bezier(t, 0, %0.2f, %0.2f, 1)' % [
-      args.state.dr_bezier_point1[:y],
-      args.state.dr_bezier_point2[:y]
+      args.state.dr_spline_points[1][:y],
+      args.state.dr_spline_points[2][:y]
     ],
     **blue
   }
   args.outputs.labels << {
     x: 20, y: 30,
     text: 'args.easing.ease_spline(start_tick, current_tick, duration, [[0, %0.2f, %0.2f, 1]])' % [
-      args.state.dr_bezier_point1[:y],
-      args.state.dr_bezier_point2[:y]
+      args.state.dr_spline_points[1][:y],
+      args.state.dr_spline_points[2][:y]
     ],
     **blue
   }
   args.outputs.labels << {
     x: 1260, y: 700,
-    text: 'Toggle 2D cubic bezier with b',
+    text: 'b: toggle cubic bezier',
     **red,
     alignment_enum: 2
   }
@@ -93,16 +98,13 @@ def handle_dragging(args)
 end
 
 def control_point_handles(args)
-  result = [
-    {
-      point: args.state.dr_bezier_point1,
-      rect: point_rect(args.state.dr_bezier_point1)
-    },
-    {
-      point: args.state.dr_bezier_point2,
-      rect: point_rect(args.state.dr_bezier_point2)
+  result = []
+  args.state.dr_spline_points.each do |point|
+    result << {
+      point: point,
+      rect: point_rect(point)
     }
-  ]
+  end
 
   if args.state.options[:show_bezier]
     result << {
