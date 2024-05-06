@@ -98,7 +98,7 @@ def dr_bezier_curve(value1, value2, color: nil)
   result = []
   resolution.times do |i|
     t = i / resolution
-    y = GTK::Geometry.cubic_bezier(t, 0, value1, value2, 1)
+    y = $args.easing.ease_spline(0, i, resolution, [[0, value1, value2, 1]])
     converted_next_point = convert_coordinates(x: t, y: y)
 
     result << {
