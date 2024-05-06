@@ -54,10 +54,8 @@ end
 
 def cubic_bezier_curve(point1, point2)
   resolution = 100
-  start_point = convert_coordinates(x: 0, y: 0)
-  end_point = convert_coordinates(x: 1, y: 1)
-  control_point_1 = convert_coordinates(point1)
-  control_point_2 = convert_coordinates(point2)
+  start_point = { x: 0, y: 0 }
+  end_point = { x: 1, y: 1 }
   last_point = start_point
   result = []
   resolution.times do |i|
@@ -67,13 +65,14 @@ def cubic_bezier_curve(point1, point2)
     factor2 = 3 * s**2 * t
     factor3 = 3 * s * t**2
     factor4 = t**3
-    x = (factor1 * start_point[:x]) + (factor2 * control_point_1[:x]) + (factor3 * control_point_2[:x]) + (factor4 * end_point[:x])
-    y = (factor1 * start_point[:y]) + (factor2 * control_point_1[:y]) + (factor3 * control_point_2[:y]) + (factor4 * end_point[:y])
+    x = (factor1 * start_point[:x]) + (factor2 * point1[:x]) + (factor3 * point2[:x]) + (factor4 * end_point[:x])
+    y = (factor1 * start_point[:y]) + (factor2 * point1[:y]) + (factor3 * point2[:y]) + (factor4 * end_point[:y])
+    converted_next_point = convert_coordinates(x: x, y: y)
+
     result << {
-      x: last_point[:x],
-      y: last_point[:y],
-      x2: x,
-      y2: y,
+      **convert_coordinates(last_point),
+      x2: converted_next_point[:x],
+      y2: converted_next_point[:y],
       r: 255, g: 0, b: 0
     }
     last_point = { x: x, y: y }
