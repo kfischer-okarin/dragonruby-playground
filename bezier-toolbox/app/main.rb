@@ -69,19 +69,19 @@ def handle_dragging(args)
   case args.state.drag[:state]
   when :not_dragging
     if mouse.button_left
-      hovered_point_id = handles.keys.find { |key| mouse.inside_rect? handles[key] }
-      if hovered_point_id
+      hovered_handle = handles.find { |handle| mouse.inside_rect? handle[:rect] }
+      if hovered_handle
         args.state.drag = {
           state: :dragging,
-          point_id: hovered_point_id,
+          handle: hovered_handle,
           start: { x: mouse.x, y: mouse.y },
-          point_start: args.state.send(hovered_point_id).dup
+          point_start: hovered_handle[:point].dup
         }
       end
     end
   when :dragging
     if mouse.button_left
-      point = args.state.send(args.state.drag[:point_id])
+      point = args.state.drag[:handle][:point]
       diff_x = (mouse.x - args.state.drag[:start][:x]) / RENDER_SCALE
       diff_y = (mouse.y - args.state.drag[:start][:y]) / RENDER_SCALE
       point[:x] = args.state.drag[:point_start][:x] + diff_x
@@ -93,14 +93,26 @@ def handle_dragging(args)
 end
 
 def control_point_handles(args)
-  result = {
-    dr_bezier_point1: point_rect(args.state.dr_bezier_point1),
-    dr_bezier_point2: point_rect(args.state.dr_bezier_point2)
-  }
+  result = [
+    {
+      point: args.state.dr_bezier_point1,
+      rect: point_rect(args.state.dr_bezier_point1)
+    },
+    {
+      point: args.state.dr_bezier_point2,
+      rect: point_rect(args.state.dr_bezier_point2)
+    }
+  ]
 
   if args.state.options[:show_bezier]
-    result[:bezier_point1] = point_rect(args.state.bezier_point1)
-    result[:bezier_point2] = point_rect(args.state.bezier_point2)
+    result << {
+      point: args.state.bezier_point1,
+      rect: point_rect(args.state.bezier_point1)
+    }
+    result << {
+      point: args.state.bezier_point2,
+      rect: point_rect(args.state.bezier_point2)
+    }
   end
 
   result
