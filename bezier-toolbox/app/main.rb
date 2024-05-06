@@ -227,11 +227,8 @@ def cubic_bezier_curve(bezier_points, color: nil)
   result = []
   resolution.times do |i|
     t = i / resolution
-    s = 1 - t
-    factors = [s**3, 3 * s**2 * t, 3 * s * t**2, t**3]
-    x = factors.zip(bezier_points.map(&:x)).map { |(factor, x)| factor * x }.sum
-    y = factors.zip(bezier_points.map(&:y)).map { |(factor, y)| factor * y }.sum
-    converted_next_point = convert_coordinates(x: x, y: y)
+    bezier_point = calc_bezier_point(bezier_points, t)
+    converted_next_point = convert_coordinates(bezier_point)
 
     result << {
       **convert_coordinates(last_point),
@@ -239,9 +236,17 @@ def cubic_bezier_curve(bezier_points, color: nil)
       y2: converted_next_point[:y],
       **(color || { r: 0, g: 0, b: 0 })
     }
-    last_point = { x: x, y: y }
+    last_point = bezier_point
   end
   result
+end
+
+def calc_bezier_point(bezier_points, t)
+  s = 1 - t
+  factors = [s**3, 3 * s**2 * t, 3 * s * t**2, t**3]
+  x = factors.zip(bezier_points.map(&:x)).map { |(factor, x)| factor * x }.sum
+  y = factors.zip(bezier_points.map(&:y)).map { |(factor, y)| factor * y }.sum
+  { x: x, y: y }
 end
 
 def render_bezier_points(args)
