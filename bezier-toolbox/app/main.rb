@@ -32,8 +32,7 @@ def tick(args)
 
   blue = { r: 0, g: 0, b: 255 }
   args.outputs.primitives << dr_bezier_curve(
-    args.state.dr_spline_points[1][:y],
-    args.state.dr_spline_points[2][:y],
+    args.state.dr_spline_points,
     color: blue
   )
   args.outputs.primitives << render_line({ x: 0, y: 0 }, args.state.dr_spline_points[1], color: blue)
@@ -43,22 +42,7 @@ def tick(args)
   args.outputs.primitives << render_point(args.state.dr_spline_points[2], color: blue)
   args.outputs.primitives << render_point_label(args.state.dr_spline_points[2], color: blue)
 
-  args.outputs.labels << {
-    x: 20, y: 60,
-    text: 'GTK::Geometry.cubic_bezier(t, 0, %0.2f, %0.2f, 1)' % [
-      args.state.dr_spline_points[1][:y],
-      args.state.dr_spline_points[2][:y]
-    ],
-    **blue
-  }
-  args.outputs.labels << {
-    x: 20, y: 30,
-    text: 'args.easing.ease_spline(start_tick, current_tick, duration, [[0, %0.2f, %0.2f, 1]])' % [
-      args.state.dr_spline_points[1][:y],
-      args.state.dr_spline_points[2][:y]
-    ],
-    **blue
-  }
+  render_ease_spline_code(args)
   args.outputs.labels << {
     x: 1260, y: 700,
     text: 'b: toggle cubic bezier',
@@ -126,14 +110,15 @@ def handle_options(args)
   options[:show_bezier] = !options[:show_bezier] if keyboard.key_down.b
 end
 
-def dr_bezier_curve(value1, value2, color: nil)
+def dr_bezier_curve(spline_points, color: nil)
   resolution = 100
   start_point = { x: 0, y: 0 }
   last_point = start_point
   result = []
+  spline = dr_spline_points_to_easing_spline(spline_points)
   resolution.times do |i|
     t = i / resolution
-    y = $args.easing.ease_spline(0, i, resolution, [[0, value1, value2, 1]])
+    y = $args.easing.ease_spline(0, i, resolution, spline)
     converted_next_point = convert_coordinates(x: t, y: y)
 
     result << {
@@ -143,6 +128,47 @@ def dr_bezier_curve(value1, value2, color: nil)
       **(color || { r: 0, g: 0, b: 0 })
     }
     last_point = { x: t, y: y }
+  end
+  result
+end
+
+def render_ease_spline_code(args)
+  spline = dr_spline_points_to_easing_spline(args.state.dr_spline_points)
+  blue = { r: 0, g: 0, b: 255 }
+  args.outputs.labels << {
+    x: 600, y: 400,
+    text: 'args.easing.ease_spline(start_tick, current_tick, duration, [',
+    **blue
+  }
+  y = 375
+  spline.each do |segment|
+    formatted_segment = '[' + segment.map { |y| '%0.2f' % y }.join(', ') + ']'
+    args.outputs.labels << {
+      x: 620, y: y,
+      text: formatted_segment,
+      **blue
+    }
+    y -= 25
+  end
+  args.outputs.labels << {
+    x: 600, y: y,
+    text: '])',
+    **blue
+  }
+end
+
+def dr_spline_points_to_easing_spline(spline_points)
+  result = [
+    spline_points[0..3].map(&:y)
+  ]
+  index = 4
+  while index < spline_points.length
+    previous_spline = result[-1]
+    result << [
+      previous_spline[3],
+      **spline_points[index..index + 2].map(&:y),
+    ]
+    index += 3
   end
   result
 end
