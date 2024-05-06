@@ -35,12 +35,7 @@ def tick(args)
     args.state.dr_spline_points,
     color: blue
   )
-  args.outputs.primitives << render_line({ x: 0, y: 0 }, args.state.dr_spline_points[1], color: blue)
-  args.outputs.primitives << render_point(args.state.dr_spline_points[1], color: blue)
-  args.outputs.primitives << render_point_label(args.state.dr_spline_points[1], color: blue)
-  args.outputs.primitives << render_line({ x: 1, y: 1 }, args.state.dr_spline_points[2], color: blue)
-  args.outputs.primitives << render_point(args.state.dr_spline_points[2], color: blue)
-  args.outputs.primitives << render_point_label(args.state.dr_spline_points[2], color: blue)
+  args.outputs.primitives << render_spline_points(args.state.dr_spline_points, color: blue)
 
   render_ease_spline_code(args)
   args.outputs.labels << {
@@ -169,6 +164,20 @@ def dr_spline_points_to_easing_spline(spline_points)
       **spline_points[index..index + 2].map(&:y),
     ]
     index += 3
+  end
+  result
+end
+
+def render_spline_points(spline_points, color: nil)
+  result = []
+  spline_points.each_with_index do |point, index|
+    result << render_point(point, color: color)
+    result << render_point_label(point, color: color)
+    if (index - 1) % 3 == 0
+      result << render_line(spline_points[index - 1], point, color: color)
+    elsif (index - 1) % 3 == 1
+      result << render_line(point, spline_points[index + 1], color: color)
+    end
   end
   result
 end
