@@ -29,6 +29,7 @@ def tick(args)
   if args.state.options[:show_bezier]
     args.outputs.primitives << cubic_bezier_curve(args.state.bezier_points, color: RED)
     args.outputs.primitives << render_spline_points(args.state.bezier_points, color: RED)
+    render_bezier_points(args)
   end
 
   args.outputs.primitives << dr_bezier_curve(
@@ -205,6 +206,22 @@ def cubic_bezier_curve(bezier_points, color: nil)
     last_point = { x: x, y: y }
   end
   result
+end
+
+def render_bezier_points(args)
+  args.outputs.primitives << {
+    x: 600, y: 480,
+    text: 'Cubic Bezier Control Points:',
+    **RED
+  }
+  args.state.bezier_points.each_with_index do |point, i|
+    args.outputs.primitives << {
+      x: 600 + i * 140,
+      y: 450,
+      text: '(%0.2f, %0.2f)' % [point[:x], point[:y]],
+      **RED
+    }
+  end
 end
 
 def point_label(point, color: nil)
