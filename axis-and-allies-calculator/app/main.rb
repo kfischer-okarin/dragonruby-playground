@@ -20,17 +20,18 @@ def tick(args)
   handle_input(args)
 
   render_units(args)
+  render_rounds(args)
   render_buttons(args)
   render_projections(args)
 end
 
 def setup(args)
+  args.state.simulated_rounds = 1
   args.state.attackers = {}
   args.state.defenders = {}
   args.state.attacker_hit_count_ps = { 0 => Fraction[1] }
   args.state.defender_hit_count_ps = { 0 => Fraction[1] }
-  args.state.attacker_wipeout_p = 0
-  args.state.defender_wipeout_p = 0
+  args.state.result_ps = {}
   args.state.buttons = build_buttons(args)
 end
 
@@ -49,7 +50,7 @@ def build_buttons(args)
   attackers = args.state.attackers
   defenders = args.state.defenders
 
-  UNITS.keys.each_with_index.flat_map { |unit, index|
+  result = UNITS.keys.each_with_index.flat_map { |unit, index|
     y = 625 - index * 40
     [
       {
@@ -70,15 +71,26 @@ def build_buttons(args)
       }
     ]
   }
-end
 
-def add_unit(args, group, unit)
-  group[unit] = (group[unit] || 0) + 1
-  update_projections(args)
+  result << {
+    x: ATTACKER_X - 50, y: 15, w: 30, h: 30, type: :remove,
+    on_click: -> { update_simulated_rounds(args, -1) }
+  }
+  result << {
+    x: ATTACKER_X + 20, y: 15, w: 30, h: 30, type: :add,
+    on_click: -> { update_simulated_rounds(args, 1) }
+  }
+  result
 end
 
 def change_unit_count(args, group, unit, delta)
   group[unit] = [(group[unit] || 0) + delta, 0].max
+  group.delete(unit) if group[unit] == 0
+  update_projections(args)
+end
+
+def update_simulated_rounds(args, delta)
+  args.state.simulated_rounds = [args.state.simulated_rounds + delta, 1].max
   update_projections(args)
 end
 
@@ -104,10 +116,11 @@ def remove_casualties(group, hits, attribute)
     [UNITS[unit][attribute], UNITS[unit][:cost]]
   }
   hits.times do
+    break if units.empty?
+
     unit = units.shift
     result[unit] -= 1
     result.delete(unit) if result[unit] == 0
-    break if units.empty?
   end
   result
 end
@@ -115,8 +128,8 @@ end
 def update_projections(args)
   args.state.attacker_hit_count_ps = calc_hit_count_ps(args.state.attackers, :attack)
   args.state.defender_hit_count_ps = calc_hit_count_ps(args.state.defenders, :defense)
-  args.state.attacker_wipeout_p = calc_wipeout_p(args.state.attackers, args.state.defender_hit_count_ps)
-  args.state.defender_wipeout_p = calc_wipeout_p(args.state.defenders, args.state.attacker_hit_count_ps)
+
+  calc_result_ps(args)
 end
 
 def calc_hit_count_ps(unit_group, attribute)
@@ -130,14 +143,36 @@ def calc_hit_count_ps(unit_group, attribute)
   }
 end
 
-def calc_wipeout_p(defending_group, attacker_hit_count_ps)
-  defending_unit_count = unit_count(defending_group)
-  result = Fraction[0]
-  attacker_hit_count_ps.each do |hits, p|
-    next if hits < defending_unit_count
-    result += p
+def combine_hit_count_ps(ps1, ps2)
+  result = {}
+  ps1.each do |hits1, p1|
+    ps2.each do |hits2, p2|
+      hits = hits1 + hits2
+      result[hits] = (result[hits] || Fraction[0]) + p1 * p2
+    end
   end
   result
+end
+
+def calc_result_ps(args)
+  result_state_ps = { [args.state.attackers, args.state.defenders] => Fraction[1] }
+  args.state.simulated_rounds.times do
+    result_state_ps = calc_next_round_ps(result_state_ps)
+  end
+  args.state.result_state_ps = result_state_ps
+
+  win_p = Fraction[0]
+  lose_p = Fraction[0]
+  result_state_ps.each do |((attackers, defenders), p)|
+    if !attackers.empty? && defenders.empty?
+      win_p += p
+    end
+    if attackers.empty?
+      lose_p += p
+    end
+  end
+  args.state.win_p = win_p
+  args.state.lose_p = lose_p
 end
 
 def calc_next_round_ps(round_ps)
@@ -162,17 +197,6 @@ def calc_next_round_ps(round_ps)
   result
 end
 
-def combine_hit_count_ps(ps1, ps2)
-  result = {}
-  ps1.each do |hits1, p1|
-    ps2.each do |hits2, p2|
-      hits = hits1 + hits2
-      result[hits] = (result[hits] || Fraction[0]) + p1 * p2
-    end
-  end
-  result
-end
-
 def render_units(args)
   unit_name_x = 20
   args.outputs.labels << { x: ATTACKER_X, y: 700, text: 'Attackers', anchor_x: 0.5 }
@@ -187,6 +211,11 @@ def render_units(args)
     args.outputs.labels << { x: DEFENDER_X, y: label_y, text: defender_count, anchor_x: 0.5 }
     args.outputs.lines << { x: unit_name_x, y: line_y, x2: DEFENDER_X + 50, y2: line_y }
   end
+end
+
+def render_rounds(args)
+  args.outputs.labels << { x: 20, y: 40, text: 'Simulated Rounds' }
+  args.outputs.labels << { x: ATTACKER_X, y: 40, text: args.state.simulated_rounds, anchor_x: 0.5 }
 end
 
 def render_buttons(args)
@@ -205,38 +234,31 @@ def render_buttons(args)
 end
 
 def render_projections(args)
-  y = 500
   render_hit_count_ps(
     args,
     args.state.attacker_hit_count_ps,
     x: 640,
-    y: y,
+    y: 600,
     title: 'Attacker Hit Count',
     color: { r: 255, g: 0, b: 0 }
   )
-  args.outputs.labels << {
-    x: 640, y: y - 30,
-    text: format('Defender Wipeout: %.2f%%', args.state.defender_wipeout_p * 100)
-  }
 
-  y = 150
   render_hit_count_ps(
     args,
     args.state.defender_hit_count_ps,
     x: 640,
-    y: y,
+    y: 450,
     title: 'Defender Hit Count',
     color: { r: 0, g: 0, b: 255 }
   )
-  args.outputs.labels << {
-    x: 640, y: y - 30,
-    text: format('Attacker Wipeout: %.2f%%', args.state.attacker_wipeout_p * 100)
-  }
+
+  args.outputs.labels << { x: 640, y: 400, text: "Win Probability: #{args.state.win_p.to_f}" }
+  args.outputs.labels << { x: 640, y: 350, text: "Lose Probability: #{args.state.lose_p.to_f}" }
 end
 
 def render_hit_count_ps(args, hit_count_ps, x:, y:, title:, color:)
   w = 500
-  h = 200
+  h = 100
   bar_count = hit_count_ps.size
   bar_w = w / (bar_count + 1)
   args.outputs.lines << { x: x, y: y, x2: x + w, y2: y }
