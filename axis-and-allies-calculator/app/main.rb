@@ -14,14 +14,21 @@ UNITS = {
 
 
 def tick(args)
-  args.state.attackers ||= {}
-  args.state.defenders ||= {}
-  args.state.buttons ||= build_buttons(args)
+  setup(args) if args.state.tick_count == 0
 
   handle_input(args)
 
   render_units(args)
   render_buttons(args)
+  render_projections(args)
+end
+
+def setup(args)
+  args.state.attackers = {}
+  args.state.defenders = {}
+  args.state.attacker_hit_count_ps = { 0 => Fraction[1] }
+  args.state.defender_hit_count_ps = { 0 => Fraction[1] }
+  args.state.buttons = build_buttons(args)
 end
 
 ATTACKER_X = 280
@@ -44,22 +51,63 @@ def build_buttons(args)
     [
       {
         x: ATTACKER_X - 50, y: y, w: 30, h: 30, type: :remove,
-        on_click: -> { attackers[unit] = [attackers[unit] - 1, 0].max }
+        on_click: -> { remove_unit(args, attackers, unit) }
       },
       {
         x: ATTACKER_X + 20, y: y, w: 30, h: 30, type: :add,
-        on_click: -> { attackers[unit] = (attackers[unit] || 0) + 1 }
+        on_click: -> { add_unit(args, attackers, unit) }
       },
       {
         x: DEFENDER_X - 50, y: y, w: 30, h: 30, type: :remove,
-        on_click: -> { defenders[unit] = [defenders[unit] - 1, 0].max }
+        on_click: -> { remove_unit(args, defenders, unit) }
       },
       {
         x: DEFENDER_X + 20, y: y, w: 30, h: 30, type: :add,
-        on_click: -> { defenders[unit] = (defenders[unit] || 0) + 1 }
+        on_click: -> { add_unit(args, defenders, unit) }
       }
     ]
   }
+end
+
+def add_unit(args, group, unit)
+  group[unit] = (group[unit] || 0) + 1
+  update_projections(args)
+end
+
+def remove_unit(args, group, unit)
+  group[unit] = [group[unit] - 1, 0].max
+  update_projections(args)
+end
+
+def unit_list(unit_group)
+  unit_group.flat_map { |unit, count| [unit] * count }
+end
+
+def update_projections(args)
+  args.state.attacker_hit_count_ps = calc_hit_count_ps(args.state.attackers, :attack)
+  args.state.defender_hit_count_ps = calc_hit_count_ps(args.state.defenders, :defense)
+end
+
+def calc_hit_count_ps(unit_group, attribute)
+  unit_list = unit_list(unit_group)
+  single_hit_count_ps = unit_list.map { |unit|
+    win_p = Fraction[UNITS[unit][attribute], 6]
+    { 1 => win_p, 0 => Fraction[1] - win_p }
+  }
+  single_hit_count_ps.reduce({ 0 => Fraction[1] }) { |acc, ps|
+    combine_hit_count_ps(acc, ps)
+  }
+end
+
+def combine_hit_count_ps(ps1, ps2)
+  result = {}
+  ps1.each do |hits1, p1|
+    ps2.each do |hits2, p2|
+      hits = hits1 + hits2
+      result[hits] = (result[hits] || Fraction[0]) + p1 * p2
+    end
+  end
+  result
 end
 
 def render_units(args)
@@ -91,6 +139,53 @@ def render_buttons(args)
     end
     result
   }
+end
+
+def render_projections(args)
+  render_hit_count_ps(
+    args,
+    args.state.attacker_hit_count_ps,
+    x: 640,
+    y: 400,
+    title: 'Attacker Hit Count',
+    color: { r: 255, g: 0, b: 0 }
+  )
+
+  render_hit_count_ps(
+    args,
+    args.state.defender_hit_count_ps,
+    x: 640,
+    y: 60,
+    title: 'Defender Hit Count',
+    color: { r: 0, g: 0, b: 255 }
+  )
+end
+
+def render_hit_count_ps(args, hit_count_ps, x:, y:, title:, color:)
+  w = 500
+  h = 200
+  bar_count = hit_count_ps.size
+  bar_w = w / (bar_count + 1)
+  args.outputs.lines << { x: x, y: y, x2: x + w, y2: y }
+  args.outputs.lines << { x: x, y: y, x2: x, y2: y + h }
+  bar_count.times do |hit_count|
+    p = hit_count_ps[hit_count] || Fraction[0]
+    bar_h = p.to_f * h
+    bar_x = x + bar_w * (hit_count + 1) - bar_w / 2
+    args.outputs.sprites << {
+      x: bar_x,
+      y: y,
+      w: bar_w,
+      h: bar_h,
+      path: :pixel,
+      **color
+    }
+    args.outputs.labels << {
+      x: bar_x + bar_w / 2,
+      y: y - 5,
+      text: hit_count,
+    }
+  end
 end
 
 def unit_name(unit_symbol)
