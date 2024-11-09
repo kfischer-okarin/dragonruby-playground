@@ -1,3 +1,5 @@
+require 'lib/fraction'
+
 UNITS = {
   infantry: { attack: 1, defense: 2, cost: 3, movement: 1 },
   armor: { attack: 3, defense: 2, cost: 5, movement: 2 },
