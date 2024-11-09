@@ -54,19 +54,19 @@ def build_buttons(args)
     [
       {
         x: ATTACKER_X - 50, y: y, w: 30, h: 30, type: :remove,
-        on_click: -> { remove_unit(args, attackers, unit) }
+        on_click: -> { change_unit_count(args, attackers, unit, -1) }
       },
       {
         x: ATTACKER_X + 20, y: y, w: 30, h: 30, type: :add,
-        on_click: -> { add_unit(args, attackers, unit) }
+        on_click: -> { change_unit_count(args, attackers, unit, 1) }
       },
       {
         x: DEFENDER_X - 50, y: y, w: 30, h: 30, type: :remove,
-        on_click: -> { remove_unit(args, defenders, unit) }
+        on_click: -> { change_unit_count(args, defenders, unit, -1) }
       },
       {
         x: DEFENDER_X + 20, y: y, w: 30, h: 30, type: :add,
-        on_click: -> { add_unit(args, defenders, unit) }
+        on_click: -> { change_unit_count(args, defenders, unit, 1) }
       }
     ]
   }
@@ -77,8 +77,8 @@ def add_unit(args, group, unit)
   update_projections(args)
 end
 
-def remove_unit(args, group, unit)
-  group[unit] = [group[unit] - 1, 0].max
+def change_unit_count(args, group, unit, delta)
+  group[unit] = [(group[unit] || 0) + delta, 0].max
   update_projections(args)
 end
 
