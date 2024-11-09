@@ -107,4 +107,6 @@ class Fraction
   def to_s
     "#{@numerator}/#{@denominator}"
   end
+
+  alias inspect to_s
 end
