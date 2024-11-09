@@ -90,6 +90,27 @@ def unit_count(unit_group)
   unit_group.values.sum
 end
 
+def remove_attacker_casualties(group, hits)
+  remove_casualties(group, hits, :attack)
+end
+
+def remove_defender_casualties(group, hits)
+  remove_casualties(group, hits, :defense)
+end
+
+def remove_casualties(group, hits, attribute)
+  result = group.dup
+  units = unit_list(group).sort_by { |unit|
+    [UNITS[unit][attribute], UNITS[unit][:cost]]
+  }
+  hits.times do
+    unit = units.shift
+    result[unit] -= 1
+    result.delete(unit) if result[unit] == 0
+  end
+  result
+end
+
 def update_projections(args)
   args.state.attacker_hit_count_ps = calc_hit_count_ps(args.state.attackers, :attack)
   args.state.defender_hit_count_ps = calc_hit_count_ps(args.state.defenders, :defense)
@@ -119,9 +140,13 @@ def calc_wipeout_p(defending_group, attacker_hit_count_ps)
 end
 
 def calc_win_p(attackers, defenders)
-  attacker_hit_count_ps = calc_hit_count_ps(attackers, :attack)
-  defender_hit_count_ps = calc_hit_count_ps(defenders, :defense)
-  attacker_hit_count_ps[1] * defender_hit_count_ps[0]
+  attacker_count = unit_count(attackers)
+  defender_count = unit_count(defenders)
+  if attacker_count == 1 && defender_count == 1
+    attacker_hit_count_ps = calc_hit_count_ps(attackers, :attack)
+    defender_hit_count_ps = calc_hit_count_ps(defenders, :defense)
+    attacker_hit_count_ps[1] * defender_hit_count_ps[0]
+  end
 end
 
 def combine_hit_count_ps(ps1, ps2)
