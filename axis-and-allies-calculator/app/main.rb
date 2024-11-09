@@ -107,6 +107,7 @@ def remove_casualties(group, hits, attribute)
     unit = units.shift
     result[unit] -= 1
     result.delete(unit) if result[unit] == 0
+    break if units.empty?
   end
   result
 end
@@ -139,14 +140,26 @@ def calc_wipeout_p(defending_group, attacker_hit_count_ps)
   result
 end
 
-def calc_win_p(attackers, defenders)
-  attacker_count = unit_count(attackers)
-  defender_count = unit_count(defenders)
-  if attacker_count == 1 && defender_count == 1
+def calc_next_round_ps(round_ps)
+  result = {}
+  round_ps.each do |(attackers, defenders), p|
+    if attackers.empty? || defenders.empty?
+      result[[attackers, defenders]] = (result[[attackers, defenders]] || Fraction[0]) + p
+      next
+    end
+
     attacker_hit_count_ps = calc_hit_count_ps(attackers, :attack)
     defender_hit_count_ps = calc_hit_count_ps(defenders, :defense)
-    attacker_hit_count_ps[1] * defender_hit_count_ps[0]
+    attacker_hit_count_ps.each do |defender_casualties, attacker_p|
+      defender_hit_count_ps.each do |attacker_casualties, defender_p|
+        next_round_attackers = remove_attacker_casualties(attackers, attacker_casualties)
+        next_round_defenders = remove_defender_casualties(defenders, defender_casualties)
+        next_round = [next_round_attackers, next_round_defenders]
+        result[next_round] = (result[next_round] || Fraction[0]) + attacker_p * defender_p * p
+      end
+    end
   end
+  result
 end
 
 def combine_hit_count_ps(ps1, ps2)
