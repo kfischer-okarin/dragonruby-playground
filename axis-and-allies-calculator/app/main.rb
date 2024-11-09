@@ -1,4 +1,5 @@
 require 'lib/fraction'
+require 'app/tests'
 
 UNITS = {
   infantry: { attack: 1, defense: 2, cost: 3, movement: 1 },
@@ -28,6 +29,8 @@ def setup(args)
   args.state.defenders = {}
   args.state.attacker_hit_count_ps = { 0 => Fraction[1] }
   args.state.defender_hit_count_ps = { 0 => Fraction[1] }
+  args.state.attacker_wipeout_p = 0
+  args.state.defender_wipeout_p = 0
   args.state.buttons = build_buttons(args)
 end
 
@@ -83,9 +86,15 @@ def unit_list(unit_group)
   unit_group.flat_map { |unit, count| [unit] * count }
 end
 
+def unit_count(unit_group)
+  unit_group.values.sum
+end
+
 def update_projections(args)
   args.state.attacker_hit_count_ps = calc_hit_count_ps(args.state.attackers, :attack)
   args.state.defender_hit_count_ps = calc_hit_count_ps(args.state.defenders, :defense)
+  args.state.attacker_wipeout_p = calc_wipeout_p(args.state.attackers, args.state.defender_hit_count_ps)
+  args.state.defender_wipeout_p = calc_wipeout_p(args.state.defenders, args.state.attacker_hit_count_ps)
 end
 
 def calc_hit_count_ps(unit_group, attribute)
@@ -97,6 +106,22 @@ def calc_hit_count_ps(unit_group, attribute)
   single_hit_count_ps.reduce({ 0 => Fraction[1] }) { |acc, ps|
     combine_hit_count_ps(acc, ps)
   }
+end
+
+def calc_wipeout_p(defending_group, attacker_hit_count_ps)
+  defending_unit_count = unit_count(defending_group)
+  result = Fraction[0]
+  attacker_hit_count_ps.each do |hits, p|
+    next if hits < defending_unit_count
+    result += p
+  end
+  result
+end
+
+def calc_win_p(attackers, defenders)
+  attacker_hit_count_ps = calc_hit_count_ps(attackers, :attack)
+  defender_hit_count_ps = calc_hit_count_ps(defenders, :defense)
+  attacker_hit_count_ps[1] * defender_hit_count_ps[0]
 end
 
 def combine_hit_count_ps(ps1, ps2)
@@ -142,23 +167,33 @@ def render_buttons(args)
 end
 
 def render_projections(args)
+  y = 500
   render_hit_count_ps(
     args,
     args.state.attacker_hit_count_ps,
     x: 640,
-    y: 400,
+    y: y,
     title: 'Attacker Hit Count',
     color: { r: 255, g: 0, b: 0 }
   )
+  args.outputs.labels << {
+    x: 640, y: y - 30,
+    text: format('Defender Wipeout: %.2f%%', args.state.defender_wipeout_p * 100)
+  }
 
+  y = 150
   render_hit_count_ps(
     args,
     args.state.defender_hit_count_ps,
     x: 640,
-    y: 60,
+    y: y,
     title: 'Defender Hit Count',
     color: { r: 0, g: 0, b: 255 }
   )
+  args.outputs.labels << {
+    x: 640, y: y - 30,
+    text: format('Attacker Wipeout: %.2f%%', args.state.attacker_wipeout_p * 100)
+  }
 end
 
 def render_hit_count_ps(args, hit_count_ps, x:, y:, title:, color:)
