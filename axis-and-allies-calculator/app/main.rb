@@ -1,5 +1,6 @@
+require 'lib/big_integer'
 require 'lib/fraction'
-require 'app/tests'
+require 'tests'
 
 UNITS = {
   infantry: { attack: 1, defense: 2, cost: 3, movement: 1 },
