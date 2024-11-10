@@ -17,7 +17,7 @@ class Fraction
   end
 
   def self.greatest_common_divisor(a, b)
-    until b == 0
+    until b.zero?
       remainder = a % b
       a = b
       b = remainder
@@ -45,7 +45,7 @@ class Fraction
   end
 
   def -(other)
-    self + (-other)
+    self + -other
   end
 
   def *(other)
