@@ -43,7 +43,7 @@ class BigInteger
     return self - -other if other.negative?
     return other - -self if @negative && !other.negative?
 
-    result = []
+    result_reversed_digits = []
     other_reversed_digits = other.instance_variable_get(:@reversed_digits)
     digit_count = [@reversed_digits.length, other_reversed_digits.length].max
 
@@ -59,18 +59,18 @@ class BigInteger
         carry = 1
       end
 
-      result << sum
+      result_reversed_digits << sum
     end
-    result << carry if carry.positive?
+    result_reversed_digits << carry if carry.positive?
 
-    BigInteger.new(reversed_digits: result, negative: @negative)
+    BigInteger.new(reversed_digits: result_reversed_digits, negative: @negative)
   end
 
   def -(other)
     return -(other - self) if self < other
     return self + -other if other.negative?
 
-    result = []
+    result_reversed_digits = []
     other_reversed_digits = other.instance_variable_get(:@reversed_digits)
     digit_count = [@reversed_digits.length, other_reversed_digits.length].max
 
@@ -86,22 +86,23 @@ class BigInteger
         borrow = 1
       end
 
-      result << difference
+      result_reversed_digits << difference
     end
 
-    result.pop while result.last.zero? && result.length > 1
+    result_reversed_digits.pop while result_reversed_digits.last.zero? && result_reversed_digits.length > 1
 
-    BigInteger.new(reversed_digits: result, negative: @negative)
+    BigInteger.new(reversed_digits: result_reversed_digits, negative: @negative)
   end
 
   def *(other)
-    result = []
+    result_reversed_digits = []
 
     other_reversed_digits = other.instance_variable_get(:@reversed_digits).dup
 
+    # Handle final zeros of other first
     while other_reversed_digits.first.zero? && other_reversed_digits.length > 1
       other_reversed_digits.shift
-      result << 0
+      result_reversed_digits << 0
     end
 
     case other_reversed_digits.length
@@ -110,22 +111,22 @@ class BigInteger
       @reversed_digits.each do |digit|
         product = digit * other_reversed_digits[0] + carry
         carry, result_digit = product.divmod(10)
-        result << result_digit
+        result_reversed_digits << result_digit
       end
-      result << carry if carry.positive?
-      BigInteger.new(reversed_digits: result, negative: @negative ^ other.negative?)
+      result_reversed_digits << carry if carry.positive?
+      BigInteger.new(reversed_digits: result_reversed_digits, negative: @negative ^ other.negative?)
     else
-      total = BigInteger[0]
-      base_digits = result.dup
+      result = BigInteger[0]
+      base_digits = result_reversed_digits.dup
       until other_reversed_digits.empty?
         sub_result = self * BigInteger.new(
           reversed_digits: [*base_digits, other_reversed_digits.shift],
           negative: other.negative?
         )
-        total += sub_result
+        result += sub_result
         base_digits << 0
       end
-      total
+      result
     end
   end
 
