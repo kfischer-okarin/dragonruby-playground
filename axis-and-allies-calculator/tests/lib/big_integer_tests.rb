@@ -53,6 +53,17 @@ def test_big_integer_subtraction(_args, assert)
   assert.equal! BigInteger['-9'] - BigInteger['-16'], BigInteger['7']
 end
 
+def test_big_integer_multiplication(_args, assert)
+  assert.equal! BigInteger['3'] * BigInteger['4'], BigInteger['12']
+  assert.equal! BigInteger['3'] * BigInteger['0'], BigInteger['0']
+  assert.equal! BigInteger['23'] * BigInteger['4'], BigInteger['92']
+  assert.equal! BigInteger['23'] * BigInteger['10'], BigInteger['230']
+  assert.equal! BigInteger['77'] * BigInteger['100'], BigInteger['7700']
+  assert.equal! BigInteger['12'] * BigInteger['12'], BigInteger['144']
+  assert.equal! BigInteger['-12'] * BigInteger['12'], BigInteger['-144']
+  assert.equal! BigInteger['-12'] * BigInteger['-12'], BigInteger['144']
+end
+
 def test_big_integer_negation(_args, assert)
   assert.equal! (-BigInteger['123']), BigInteger['-123']
   assert.equal! (-BigInteger['-123']), BigInteger['123']

@@ -15,6 +15,8 @@ class BigInteger
       @reversed_digits.pop
       @negative = true
     end
+
+    @reversed_digits.freeze
   end
 
   def self.[](value)
@@ -90,6 +92,41 @@ class BigInteger
     result.pop while result.last.zero? && result.length > 1
 
     BigInteger.new(reversed_digits: result, negative: @negative)
+  end
+
+  def *(other)
+    result = []
+
+    other_reversed_digits = other.instance_variable_get(:@reversed_digits).dup
+
+    while other_reversed_digits.first.zero? && other_reversed_digits.length > 1
+      other_reversed_digits.shift
+      result << 0
+    end
+
+    case other_reversed_digits.length
+    when 1
+      carry = 0
+      @reversed_digits.each do |digit|
+        product = digit * other_reversed_digits[0] + carry
+        carry, result_digit = product.divmod(10)
+        result << result_digit
+      end
+      result << carry if carry.positive?
+      BigInteger.new(reversed_digits: result, negative: @negative ^ other.negative?)
+    else
+      total = BigInteger[0]
+      base_digits = result.dup
+      until other_reversed_digits.empty?
+        sub_result = self * BigInteger.new(
+          reversed_digits: [*base_digits, other_reversed_digits.shift],
+          negative: other.negative?
+        )
+        total += sub_result
+        base_digits << 0
+      end
+      total
+    end
   end
 
   def ==(other)
