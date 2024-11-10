@@ -62,6 +62,7 @@ def test_big_integer_multiplication(_args, assert)
   assert.equal! BigInteger['12'] * BigInteger['12'], BigInteger['144']
   assert.equal! BigInteger['-12'] * BigInteger['12'], BigInteger['-144']
   assert.equal! BigInteger['-12'] * BigInteger['-12'], BigInteger['144']
+  assert.equal! BigInteger['2000'] * BigInteger['0'], BigInteger['0']
 end
 
 def test_big_integer_negation(_args, assert)

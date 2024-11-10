@@ -5,17 +5,17 @@ class BigInteger
     if reversed_digits && !negative.nil?
       @reversed_digits = reversed_digits
       @negative = negative
-      return
+    else
+      value = value.to_s
+      @reversed_digits = value.chars.map(&:to_i).reverse
+      @negative = false
+      if value.chars.first == '-'
+        @reversed_digits.pop
+        @negative = true
+      end
     end
 
-    value = value.to_s
-    @reversed_digits = value.chars.map(&:to_i).reverse
-    @negative = false
-    if value.chars.first == '-'
-      @reversed_digits.pop
-      @negative = true
-    end
-
+    remove_leading_zeros(@reversed_digits)
     @reversed_digits.freeze
   end
 
@@ -88,8 +88,6 @@ class BigInteger
 
       result_reversed_digits << difference
     end
-
-    result_reversed_digits.pop while result_reversed_digits.last.zero? && result_reversed_digits.length > 1
 
     BigInteger.new(reversed_digits: result_reversed_digits, negative: @negative)
   end
@@ -165,5 +163,14 @@ class BigInteger
 
   def inspect
     "BigInteger['#{self}']"
+  end
+
+  private
+
+  def remove_leading_zeros(reversed_digits)
+    while reversed_digits.last.zero? && reversed_digits.length > 1
+      reversed_digits.pop
+      p reversed_digits
+    end
   end
 end
