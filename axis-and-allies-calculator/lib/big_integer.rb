@@ -21,8 +21,16 @@ class BigInteger
     new(value)
   end
 
+  def positive?
+    !@negative
+  end
+
   def negative?
     @negative
+  end
+
+  def zero?
+    @reversed_digits == [0] && !@negative
   end
 
   def -@

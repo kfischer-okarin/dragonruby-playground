@@ -57,3 +57,19 @@ def test_big_integer_negation(_args, assert)
   assert.equal! (-BigInteger['123']), BigInteger['-123']
   assert.equal! (-BigInteger['-123']), BigInteger['123']
 end
+
+def test_big_integer_negative(_args, assert)
+  assert.true! BigInteger['-123'].negative?
+  assert.false! BigInteger['123'].negative?
+end
+
+def test_big_integer_positive(_args, assert)
+  assert.true! BigInteger['123'].positive?
+  assert.false! BigInteger['-123'].positive?
+end
+
+def test_big_integer_zero(_args, assert)
+  assert.true! BigInteger['0'].zero?
+  assert.false! BigInteger['1'].zero?
+  assert.false! BigInteger['-1'].zero?
+end
