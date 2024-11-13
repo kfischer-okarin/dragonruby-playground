@@ -168,9 +168,6 @@ class BigInteger
   private
 
   def remove_leading_zeros(reversed_digits)
-    while reversed_digits.last.zero? && reversed_digits.length > 1
-      reversed_digits.pop
-      p reversed_digits
-    end
+    reversed_digits.pop while reversed_digits.last.zero? && reversed_digits.length > 1
   end
 end
