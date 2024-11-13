@@ -4,7 +4,7 @@ class Fraction
   attr_reader :numerator, :denominator
 
   def initialize(numerator, denominator = 1)
-    raise TypeError, 'Fraction only accepts integers' unless numerator.is_a?(Integer) && denominator.is_a?(Integer)
+    raise TypeError, 'Fraction only accepts integers' unless integer?(numerator) && integer?(denominator)
     raise ZeroDivisionError, 'Denominator cannot be zero' if denominator.zero?
 
     gcd = self.class.greatest_common_divisor(numerator, denominator)
@@ -34,7 +34,7 @@ class Fraction
 
   def +(other)
     case other
-    when Integer, Fraction
+    when Fraction, *integer_classes
       other = Fraction[other] unless other.is_a?(Fraction)
 
       Fraction.new(
@@ -52,7 +52,7 @@ class Fraction
 
   def *(other)
     case other
-    when Integer, Fraction
+    when Fraction, *integer_classes
       other = Fraction[other] unless other.is_a?(Fraction)
 
       Fraction.new(@numerator * other.numerator, @denominator * other.denominator)
@@ -63,7 +63,7 @@ class Fraction
 
   def /(other)
     case other
-    when Integer, Fraction
+    when Fraction, *integer_classes
       other = Fraction[other] unless other.is_a?(Fraction)
 
       self * Fraction.new(other.denominator, other.numerator)
@@ -74,7 +74,7 @@ class Fraction
 
   def <=>(other)
     case other
-    when Integer, Fraction
+    when Fraction, *integer_classes
       other = Fraction[other] unless other.is_a?(Fraction)
 
       @numerator * other.denominator <=> other.numerator * @denominator
@@ -85,7 +85,7 @@ class Fraction
 
   def ==(other)
     case other
-    when Integer, Fraction
+    when Fraction, *integer_classes
       other = Fraction[other] unless other.is_a?(Fraction)
 
       @numerator == other.numerator && @denominator == other.denominator
@@ -111,4 +111,14 @@ class Fraction
   end
 
   alias inspect to_s
+
+  private
+
+  def integer?(value)
+    integer_classes.any? { |klass| value.is_a?(klass) }
+  end
+
+  def integer_classes
+    [Integer]
+  end
 end
