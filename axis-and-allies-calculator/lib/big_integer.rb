@@ -155,6 +155,7 @@ class BigInteger
 
   def divmod(other)
     return divmod(BigInteger[other]) if other.is_a?(Integer)
+    return [self, BigInteger[0]] if other == 1
 
     multiples_of_other = (0..9).map { |i| other.abs * i }
     current_dividend = BigInteger[0]
