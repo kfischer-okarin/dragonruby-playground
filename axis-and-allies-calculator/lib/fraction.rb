@@ -12,18 +12,20 @@ class Fraction
     @denominator = denominator.idiv(gcd)
   end
 
-  def self.[](numerator, denominator = 1)
-    new(numerator, denominator)
-  end
-
-  def self.greatest_common_divisor(a, b)
-    until b.zero?
-      remainder = a % b
-      a = b
-      b = remainder
+  class << self
+    def [](numerator, denominator = 1)
+      new(numerator, denominator)
     end
 
-    a
+    def greatest_common_divisor(a, b)
+      until b.zero?
+        remainder = a % b
+        a = b
+        b = remainder
+      end
+
+      a
+    end
   end
 
   def -@
