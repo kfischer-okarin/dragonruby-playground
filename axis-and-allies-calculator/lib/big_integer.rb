@@ -44,6 +44,7 @@ class BigInteger
   end
 
   def +(other)
+    return self + BigInteger[other] if other.is_a?(Integer)
     return self - -other if other.negative?
     return other - -self if @negative && !other.negative?
 
@@ -71,6 +72,7 @@ class BigInteger
   end
 
   def -(other)
+    return self - BigInteger[other] if other.is_a?(Integer)
     return -(other - self) if self < other
     return self + -other if other.negative?
 
@@ -97,6 +99,8 @@ class BigInteger
   end
 
   def *(other)
+    return self * BigInteger[other] if other.is_a?(Integer)
+
     result_reversed_digits = []
 
     other_reversed_digits = other.instance_variable_get(:@reversed_digits).dup
@@ -141,6 +145,8 @@ class BigInteger
   end
 
   def divmod(other)
+    return divmod(BigInteger[other]) if other.is_a?(Integer)
+
     multiples_of_other = (0..9).map { |i| other.abs * BigInteger[i] }
     current_dividend = BigInteger[0]
     digit_count = @reversed_digits.length
