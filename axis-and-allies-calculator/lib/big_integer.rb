@@ -147,13 +147,13 @@ class BigInteger
   def divmod(other)
     return divmod(BigInteger[other]) if other.is_a?(Integer)
 
-    multiples_of_other = (0..9).map { |i| other.abs * BigInteger[i] }
+    multiples_of_other = (0..9).map { |i| other.abs * i }
     current_dividend = BigInteger[0]
     digit_count = @reversed_digits.length
     digit_index = digit_count - 1
     result_digits = []
     while digit_index >= 0
-      current_dividend = current_dividend * BigInteger[10] + BigInteger[@reversed_digits[digit_index]]
+      current_dividend = current_dividend * 10 + BigInteger[@reversed_digits[digit_index]]
       division_result = multiples_of_other.find_index { |multiple| multiple > current_dividend } - 1
       result_digits << division_result
       current_dividend -= multiples_of_other[division_result]
@@ -163,7 +163,7 @@ class BigInteger
 
     quotient = BigInteger.new(reversed_digits: result_digits, negative: false)
     one_is_negative = @negative ^ other.negative?
-    quotient = -quotient - BigInteger[1] if one_is_negative
+    quotient = -quotient - 1 if one_is_negative
     modulus = self - quotient * other
     [quotient, modulus]
   end
