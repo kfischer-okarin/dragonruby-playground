@@ -172,7 +172,11 @@ class BigInteger
 
     quotient = BigInteger.new(reversed_digits: result_digits, negative: false)
     one_is_negative = @negative ^ other.negative?
-    quotient = -quotient - 1 if one_is_negative
+    if one_is_negative
+      quotient = -quotient
+      # Integer division rounds towards negative infinity
+      quotient -= 1 unless current_dividend.zero?
+    end
     modulus = self - quotient * other
     [quotient, modulus]
   end
