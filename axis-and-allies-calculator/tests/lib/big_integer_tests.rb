@@ -65,6 +65,30 @@ def test_big_integer_multiplication(_args, assert)
   assert.equal! BigInteger['2000'] * BigInteger['0'], BigInteger['0']
 end
 
+def test_big_integer_divmod(_args, assert)
+  assert.equal! BigInteger['12'].divmod(BigInteger['4']), [BigInteger['3'], BigInteger['0']]
+  assert.equal! BigInteger['12'].divmod(BigInteger['5']), [BigInteger['2'], BigInteger['2']]
+  assert.equal! BigInteger['300'].divmod(BigInteger['17']), [BigInteger['17'], BigInteger['11']]
+  assert.equal! BigInteger['11'].divmod(BigInteger['-3']), [BigInteger['-4'], BigInteger['-1']]
+  assert.equal! BigInteger['-11'].divmod(BigInteger['3']), [BigInteger['-4'], BigInteger['1']]
+end
+
+def test_big_integer_division(_args, assert)
+  assert.equal! BigInteger['12'].idiv(BigInteger['4']), BigInteger['3']
+  assert.equal! BigInteger['12'].idiv(BigInteger['5']), BigInteger['2']
+  assert.equal! BigInteger['300'].idiv(BigInteger['17']), BigInteger['17']
+  assert.equal! BigInteger['11'].idiv(BigInteger['-3']), BigInteger['-4']
+  assert.equal! BigInteger['-11'].idiv(BigInteger['3']), BigInteger['-4']
+end
+
+def test_big_integer_modulo(_args, assert)
+  assert.equal! BigInteger['12'] % BigInteger['4'], BigInteger['0']
+  assert.equal! BigInteger['12'] % BigInteger['5'], BigInteger['2']
+  assert.equal! BigInteger['300'] % BigInteger['17'], BigInteger['11']
+  assert.equal! BigInteger['11'] % BigInteger['-3'], BigInteger['-1']
+  assert.equal! BigInteger['-11'] % BigInteger['3'], BigInteger['1']
+end
+
 def test_big_integer_negation(_args, assert)
   assert.equal! (-BigInteger['123']), BigInteger['-123']
   assert.equal! (-BigInteger['-123']), BigInteger['123']
@@ -84,4 +108,9 @@ def test_big_integer_zero(_args, assert)
   assert.true! BigInteger['0'].zero?
   assert.false! BigInteger['1'].zero?
   assert.false! BigInteger['-1'].zero?
+end
+
+def test_big_integer_abs(_args, assert)
+  assert.equal! BigInteger['123'].abs, BigInteger['123']
+  assert.equal! BigInteger['-123'].abs, BigInteger['123']
 end

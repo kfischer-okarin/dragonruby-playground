@@ -39,6 +39,10 @@ class BigInteger
     BigInteger.new(reversed_digits: @reversed_digits, negative: !@negative)
   end
 
+  def abs
+    @negative ? -self : self
+  end
+
   def +(other)
     return self - -other if other.negative?
     return other - -self if @negative && !other.negative?
@@ -126,6 +130,36 @@ class BigInteger
       end
       result
     end
+  end
+
+  def idiv(other)
+    divmod(other).first
+  end
+
+  def %(other)
+    divmod(other).last
+  end
+
+  def divmod(other)
+    multiples_of_other = (0..9).map { |i| other.abs * BigInteger[i] }
+    current_dividend = BigInteger[0]
+    digit_count = @reversed_digits.length
+    digit_index = digit_count - 1
+    result_digits = []
+    while digit_index >= 0
+      current_dividend = current_dividend * BigInteger[10] + BigInteger[@reversed_digits[digit_index]]
+      division_result = multiples_of_other.find_index { |multiple| multiple > current_dividend } - 1
+      result_digits << division_result
+      current_dividend -= multiples_of_other[division_result]
+      digit_index -= 1
+    end
+    result_digits.reverse!
+
+    quotient = BigInteger.new(reversed_digits: result_digits, negative: false)
+    one_is_negative = @negative ^ other.negative?
+    quotient = -quotient - BigInteger[1] if one_is_negative
+    modulus = self - quotient * other
+    [quotient, modulus]
   end
 
   def ==(other)
