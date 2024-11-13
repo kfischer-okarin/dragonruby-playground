@@ -36,6 +36,20 @@ def setup(args)
   args.state.buttons = build_buttons(args)
 end
 
+module BigIntegerSupport
+  def initialize(numerator, denominator = 1)
+    numerator = BigInteger[numerator] if numerator.is_a?(Integer)
+    denominator = BigInteger[denominator] if denominator.is_a?(Integer)
+    super(numerator, denominator)
+  end
+
+  def integer_classes
+    [Integer, BigInteger]
+  end
+end
+
+Fraction.prepend(BigIntegerSupport) unless Fraction < BigIntegerSupport
+
 ATTACKER_X = 280
 DEFENDER_X = 430
 
