@@ -8,6 +8,13 @@ def test_big_integer_from_integer(_args, assert)
   assert.equal! BigInteger[-123].to_s, '-123'
 end
 
+def test_big_integer_cannot_use_float(_args, assert)
+  BigInteger[1.5]
+  assert.fail! 'Expected to raise an error'
+rescue TypeError
+  assert.ok!
+end
+
 def test_big_integer_equality_considers_sign(_args, assert)
   assert.not_equal! BigInteger['123'], BigInteger['-123']
 end
@@ -77,13 +84,17 @@ def test_big_integer_divmod(_args, assert)
   assert.equal! BigInteger['-11'].divmod(3), [BigInteger['-4'], BigInteger['1']]
 end
 
-def test_big_integer_division(_args, assert)
+def test_big_integer_integer_division(_args, assert)
   assert.equal! BigInteger['12'].idiv(BigInteger['4']), BigInteger['3']
   assert.equal! BigInteger['12'].idiv(BigInteger['5']), BigInteger['2']
   assert.equal! BigInteger['300'].idiv(BigInteger['17']), BigInteger['17']
   assert.equal! BigInteger['11'].idiv(BigInteger['-3']), BigInteger['-4']
   assert.equal! BigInteger['-11'].idiv(BigInteger['3']), BigInteger['-4']
   assert.equal! BigInteger['-11'].idiv(3), BigInteger['-4']
+end
+
+def test_big_integer_float_division(_args, assert)
+  assert.equal! BigInteger['15'] / BigInteger['2'], 7.5
 end
 
 def test_big_integer_modulo(_args, assert)

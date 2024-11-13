@@ -6,12 +6,17 @@ class BigInteger
       @reversed_digits = reversed_digits
       @negative = negative
     else
-      value = value.to_s
-      @reversed_digits = value.chars.map(&:to_i).reverse
-      @negative = false
-      if value.chars.first == '-'
-        @reversed_digits.pop
-        @negative = true
+      case value
+      when Integer, String
+        value = value.to_s
+        @reversed_digits = value.chars.map(&:to_i).reverse
+        @negative = false
+        if value.chars.first == '-'
+          @reversed_digits.pop
+          @negative = true
+        end
+      else
+        raise TypeError, "Cannot create BigInteger from #{value.class}"
       end
     end
 
@@ -134,6 +139,10 @@ class BigInteger
       end
       result
     end
+  end
+
+  def /(other)
+    to_s.to_f / other.to_s.to_f
   end
 
   def idiv(other)
