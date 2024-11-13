@@ -157,7 +157,7 @@ class BigInteger
     return divmod(BigInteger[other]) if other.is_a?(Integer)
     return [self, BigInteger[0]] if other == 1
 
-    multiples_of_other = (0..9).map { |i| other.abs * i }
+    multiples_of_other = (0..10).map { |i| other.abs * i }
     current_dividend = BigInteger[0]
     digit_count = @reversed_digits.length
     digit_index = digit_count - 1
