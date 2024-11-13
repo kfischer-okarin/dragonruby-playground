@@ -32,7 +32,7 @@ def test_fraction_addition(_args, assert)
   assert.equal! Fraction[1, 2] + 0.5, 1
 end
 
-def test_fration_negation(_args, assert)
+def test_fraction_negation(_args, assert)
   assert.equal!(-Fraction[1, 2], Fraction[-1, 2])
 end
 
