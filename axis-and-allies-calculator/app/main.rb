@@ -158,7 +158,7 @@ end
 def calc_result_ps(args)
   result_state_ps = { [args.state.attackers, args.state.defenders] => Fraction[1] }
   args.state.simulated_rounds.times do
-    result_state_ps = calc_next_round_ps(result_state_ps)
+    result_state_ps = round_ps(calc_next_round_ps(result_state_ps), 10000)
   end
   args.state.result_state_ps = result_state_ps
 
