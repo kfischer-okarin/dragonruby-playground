@@ -212,6 +212,19 @@ def calc_next_round_ps(round_ps)
   result
 end
 
+def round_ps(ps, denominator)
+  values = []
+  ps.each do |key, p|
+    values << [key, Fraction[(p.to_f * denominator).round, denominator]]
+  end
+  sum_except_last = Fraction[0]
+  values[0..-2].each do |_, p|
+    sum_except_last += p
+  end
+  values[-1][1] = Fraction[1] - sum_except_last
+  values.to_h
+end
+
 def render_units(args)
   unit_name_x = 20
   args.outputs.labels << { x: ATTACKER_X, y: 700, text: 'Attackers', anchor_x: 0.5 }

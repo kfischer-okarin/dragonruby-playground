@@ -158,3 +158,12 @@ def test_calc_next_round_ps_second_round(_args, assert)
 
   assert.equal! result, expected
 end
+
+def test_round_ps(_args, assert)
+  ps = { a: Fraction[1, 3], b: Fraction[1, 6], c: Fraction[1, 2] }
+
+  result = round_ps(ps, 100)
+
+  expected = { a: Fraction[33, 100], b: Fraction[17, 100], c: Fraction[50, 100] }
+  assert.equal! result, expected
+end
