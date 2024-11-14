@@ -159,6 +159,21 @@ def test_calc_next_round_ps_second_round(_args, assert)
   assert.equal! result, expected
 end
 
+def test_calc_round_result_ps(_args, assert)
+  result_state_ps = {
+    [{ infantry: 1 }, {}] => Fraction[1, 8],
+    [{ infantry: 2 }, {}] => Fraction[1, 8],
+    [{}, {}] => Fraction[1, 6],
+    [{}, { infantry: 1 }] => Fraction[1, 6],
+    [{ infantry: 1 }, { infantry: 1 }] => Fraction[3, 12],
+    [{ infantry: 2 }, { infantry: 1 }] => Fraction[2, 12]
+  }
+
+  result = calc_round_result_ps(result_state_ps)
+
+  assert.equal! result, { win: Fraction[1, 4], lose: Fraction[1, 3], continue: Fraction[5, 12] }
+end
+
 def test_round_ps(_args, assert)
   ps = { a: Fraction[1, 3], b: Fraction[1, 6], c: Fraction[1, 2] }
 

@@ -198,6 +198,20 @@ def calc_next_round_ps(round_ps)
   result
 end
 
+def calc_round_result_ps(result_state_ps)
+  result = { win: Fraction[0], lose: Fraction[0], continue: Fraction[0] }
+  result_state_ps.each do |((attackers, defenders), p)|
+    if !attackers.empty? && defenders.empty?
+      result[:win] += p
+    elsif attackers.empty?
+      result[:lose] += p
+    else
+      result[:continue] += p
+    end
+  end
+  result
+end
+
 def round_ps(ps, denominator)
   values = []
   ps.each do |key, p|
