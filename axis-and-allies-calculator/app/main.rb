@@ -21,13 +21,11 @@ def tick(args)
   handle_input(args)
 
   render_units(args)
-  render_rounds(args)
   render_buttons(args)
   render_projections(args)
 end
 
 def setup(args)
-  args.state.simulated_rounds = 1
   args.state.attackers = {}
   args.state.defenders = {}
   args.state.attacker_hit_count_ps = { 0 => Fraction[1] }
@@ -73,25 +71,12 @@ def build_buttons(args)
     ]
   }
 
-  result << {
-    x: ATTACKER_X - 50, y: 15, w: 30, h: 30, type: :remove,
-    on_click: -> { update_simulated_rounds(args, -1) }
-  }
-  result << {
-    x: ATTACKER_X + 20, y: 15, w: 30, h: 30, type: :add,
-    on_click: -> { update_simulated_rounds(args, 1) }
-  }
   result
 end
 
 def change_unit_count(args, group, unit, delta)
   group[unit] = [(group[unit] || 0) + delta, 0].max
   group.delete(unit) if group[unit] == 0
-  update_projections(args)
-end
-
-def update_simulated_rounds(args, delta)
-  args.state.simulated_rounds = [args.state.simulated_rounds + delta, 1].max
   update_projections(args)
 end
 
@@ -157,23 +142,16 @@ end
 
 def calc_result_ps(args)
   result_state_ps = { [args.state.attackers, args.state.defenders] => Fraction[1] }
-  args.state.simulated_rounds.times do
+  result_ps = nil
+  loop do
     result_state_ps = round_ps(calc_next_round_ps(result_state_ps), 10000)
+    result_ps = calc_round_result_ps(result_state_ps)
+    break if result_ps[:continue] < Fraction[1, 100]
   end
   args.state.result_state_ps = result_state_ps
 
-  win_p = Fraction[0]
-  lose_p = Fraction[0]
-  result_state_ps.each do |((attackers, defenders), p)|
-    if !attackers.empty? && defenders.empty?
-      win_p += p
-    end
-    if attackers.empty?
-      lose_p += p
-    end
-  end
-  args.state.win_p = win_p
-  args.state.lose_p = lose_p
+  args.state.win_p = result_ps[:win]
+  args.state.lose_p = result_ps[:lose]
 end
 
 def calc_next_round_ps(round_ps)
@@ -239,11 +217,6 @@ def render_units(args)
     args.outputs.labels << { x: DEFENDER_X, y: label_y, text: defender_count, anchor_x: 0.5 }
     args.outputs.lines << { x: unit_name_x, y: line_y, x2: DEFENDER_X + 50, y2: line_y }
   end
-end
-
-def render_rounds(args)
-  args.outputs.labels << { x: 20, y: 40, text: 'Simulated Rounds' }
-  args.outputs.labels << { x: ATTACKER_X, y: 40, text: args.state.simulated_rounds, anchor_x: 0.5 }
 end
 
 def render_buttons(args)
