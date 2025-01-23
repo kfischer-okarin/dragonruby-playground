@@ -141,8 +141,8 @@ end
 def calc_wall_angle(collided_walls)
   collided_wall = collided_walls[0]
   Math.atan2(
-    collided_wall.y2 - collided_wall.y1,
-    collided_wall.x2 - collided_wall.x1
+    collided_wall[:y2] - collided_wall[:y1],
+    collided_wall[:x2] - collided_wall[:x1]
   ) % Math::PI
   # TODO: Maybe handle several wall special cases?? but it seems to work now
 end
@@ -192,8 +192,8 @@ def circle_line_collision(ball, wall)
   # q = (y_diff**2 + xc**2 - r**2) / (1 + m**2)
   # => x**2 + p * x + q = 0
   # => x = -p/2 +- sqrt(p**2 / 4 - q)
-  m = (wall.y2 - wall.y1) / (wall.x2 - wall.x1)
-  b = wall.y1 - m * wall.x1
+  m = (wall[:y2] - wall[:y1]) / (wall[:x2] - wall[:x1])
+  b = wall[:y1] - m * wall[:x1]
   y_diff = b - ball.y
   p_value = (2 * m * y_diff - 2 * ball.x) / (1 + m**2)
   q = (y_diff**2 + ball.x**2 - ball.r**2) / (1 + m**2)
@@ -204,7 +204,7 @@ def circle_line_collision(ball, wall)
   sqrt_result = Math.sqrt(in_sqrt)
   x1 = -(p_value / 2) + sqrt_result
   x2 = -(p_value / 2) - sqrt_result
-  wall_x_min, wall_x_max = [wall.x1, wall.x2].sort
+  wall_x_min, wall_x_max = [wall[:x1], wall[:x2]].sort
 
   if x1 >= wall_x_min && x1 <= wall_x_max
     { x: x1, y: m * x1 + b }
