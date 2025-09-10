@@ -22,3 +22,6 @@ vendor
 
 # Main playground area
 mygame
+
+# Error logs
+*/errors/*.txt
